@@ -21,8 +21,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // Size of the color selection boxes and the paintbrush size
-#define BOXSIZE 40
-#define PENRADIUS 3
+#define COLORWIDTH 240
 int oldcolor, currentcolor;
 
 // How many leds in your strip?
@@ -36,14 +35,12 @@ int oldcolor, currentcolor;
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 
-void setup(void) {
- // while (!Serial);     // used for leonardo debugging
-
+void setup(void)
+{
   Serial.begin(9600);
-  Serial.println(F("Touch Paint!"));
+  Serial.println(F("Pixelstick"));
 
   tft.begin();
-
   if (!ts.begin()) {
     Serial.println("Couldn't start touchscreen controller");
     while (1);
@@ -52,23 +49,23 @@ void setup(void) {
 
   tft.fillScreen(ILI9341_BLACK);
 
-  // make the color selection boxes
-  tft.fillRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
-  tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_YELLOW);
-  tft.fillRect(BOXSIZE*2, 0, BOXSIZE, BOXSIZE, ILI9341_GREEN);
-  tft.fillRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
-  tft.fillRect(BOXSIZE*4, 0, BOXSIZE, BOXSIZE, ILI9341_BLUE);
-  tft.fillRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, ILI9341_MAGENTA);
-
-  // select the current color 'red'
-  tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-  currentcolor = ILI9341_RED;
+  // make the color selection
+  const unsigned boxWidth = tft.width();
+  unsigned pos = 0;
+  for (unsigned hue = 0; hue < 256; ++hue) {
+    const CRGB c(CHSV(hue, 255, 255));
+    const uint16_t c565 = tft.color565(c.r, c.g, c.b);
+    const unsigned boxHeight = 1 + unsigned(hue % 5 == 0);
+    tft.fillRect(0, pos, COLORWIDTH, boxHeight, c565);
+    pos += boxHeight;
+  }
 
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 }
 
 int ledWidth = 80;
 int ledPos = ledWidth / 2 + 1;
+CRGB ledColor = CRGB::White;
 
 #define WRAP(x) ((x + NUM_LEDS) % NUM_LEDS)
 
@@ -80,81 +77,24 @@ void loop()
     ledPos = 0;
   }
   for (int i = -ledWidth / 2; i <= ledWidth / 2; ++i) {
-    leds[WRAP(ledPos + i)].setHSV((unsigned)((((float)ledPos) / NUM_LEDS) * 255), 255, 200 - (((float)abs(i) * 2) / ledWidth) * 200);
+    leds[WRAP(ledPos + i)] = ledColor;
   }
   FastLED.show();
 
-  // See if there's any  touch data for us
+  // See if there's any touch data for us
   if (ts.bufferEmpty()) {
     return;
   }
-  /*
-  // You can also wait for a touch
-  if (! ts.touched()) {
-    return;
-  }
-  */
 
   // Retrieve a point
   TS_Point p = ts.getPoint();
-
- /*
-  Serial.print("X = "); Serial.print(p.x);
-  Serial.print("\tY = "); Serial.print(p.y);
-  Serial.print("\tPressure = "); Serial.println(p.z);
- */
 
   // Scale from ~0->4000 to tft.width using the calibration #'s
   p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
 
-  /*
-  Serial.print("("); Serial.print(p.x);
-  Serial.print(", "); Serial.print(p.y);
-  Serial.println(")");
-  */
-
-  if (p.y < BOXSIZE) {
-     oldcolor = currentcolor;
-
-     if (p.x < BOXSIZE) {
-       currentcolor = ILI9341_RED;
-       tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     } else if (p.x < BOXSIZE*2) {
-       currentcolor = ILI9341_YELLOW;
-       tft.drawRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     } else if (p.x < BOXSIZE*3) {
-       currentcolor = ILI9341_GREEN;
-       tft.drawRect(BOXSIZE*2, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     } else if (p.x < BOXSIZE*4) {
-       currentcolor = ILI9341_CYAN;
-       tft.drawRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     } else if (p.x < BOXSIZE*5) {
-       currentcolor = ILI9341_BLUE;
-       tft.drawRect(BOXSIZE*4, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     } else if (p.x < BOXSIZE*6) {
-       currentcolor = ILI9341_MAGENTA;
-       tft.drawRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
-     }
-
-     if (oldcolor != currentcolor) {
-        if (oldcolor == ILI9341_RED)
-          tft.fillRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_RED);
-        if (oldcolor == ILI9341_YELLOW)
-          tft.fillRect(BOXSIZE, 0, BOXSIZE, BOXSIZE, ILI9341_YELLOW);
-        if (oldcolor == ILI9341_GREEN)
-          tft.fillRect(BOXSIZE*2, 0, BOXSIZE, BOXSIZE, ILI9341_GREEN);
-        if (oldcolor == ILI9341_CYAN)
-          tft.fillRect(BOXSIZE*3, 0, BOXSIZE, BOXSIZE, ILI9341_CYAN);
-        if (oldcolor == ILI9341_BLUE)
-          tft.fillRect(BOXSIZE*4, 0, BOXSIZE, BOXSIZE, ILI9341_BLUE);
-        if (oldcolor == ILI9341_MAGENTA)
-          tft.fillRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, ILI9341_MAGENTA);
-     }
-  }
-  if (((p.y-PENRADIUS) > BOXSIZE) && ((p.y+PENRADIUS) < tft.height())) {
-    tft.fillCircle(p.x, p.y, PENRADIUS, currentcolor);
-  }
+  unsigned hue = (float(p.y) / tft.height()) * 255;
+  ledColor = CRGB(CHSV(hue, 255, 255));
 }
 
 // vim: et ts=2
