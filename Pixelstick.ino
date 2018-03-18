@@ -26,7 +26,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 int oldcolor, currentcolor;
 
 // How many leds in your strip?
-#define NUM_LEDS 144
+#define NUM_LEDS 288
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
 // need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
