@@ -1,24 +1,9 @@
-/***************************************************
-  This is our touchscreen painting example for the Adafruit ILI9341 Shield
-  ----> http://www.adafruit.com/products/1651
-
-  Check out the links above for our tutorials and wiring diagrams
-  These displays use SPI to communicate, 4 or 5 pins are required to
-  interface (RST is optional)
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.
-  MIT license, all text above must be included in any redistribution
- ****************************************************/
-
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <SPI.h>
 #include <Wire.h>      // this is needed even tho we aren't using it
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_STMPE610.h>
+#include "FastLED.h"
 
 // This is calibration data for the raw touch data to the screen coordinates
 #define TS_MINX 150
@@ -39,6 +24,17 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #define BOXSIZE 40
 #define PENRADIUS 3
 int oldcolor, currentcolor;
+
+// How many leds in your strip?
+#define NUM_LEDS 144
+
+// For led chips like Neopixels, which have a data line, ground, and power, you just
+// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
+// ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
+#define DATA_PIN 2
+
+// Define the array of leds
+CRGB leds[NUM_LEDS];
 
 void setup(void) {
  // while (!Serial);     // used for leonardo debugging
@@ -67,11 +63,27 @@ void setup(void) {
   // select the current color 'red'
   tft.drawRect(0, 0, BOXSIZE, BOXSIZE, ILI9341_WHITE);
   currentcolor = ILI9341_RED;
+
+  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 }
 
+int ledWidth = 80;
+int ledPos = ledWidth / 2 + 1;
+
+#define WRAP(x) ((x + NUM_LEDS) % NUM_LEDS)
 
 void loop()
 {
+  leds[WRAP(ledPos - ledWidth / 2)] = CRGB::Black;
+  ++ledPos;
+  if (ledPos == NUM_LEDS) {
+    ledPos = 0;
+  }
+  for (int i = -ledWidth / 2; i <= ledWidth / 2; ++i) {
+    leds[WRAP(ledPos + i)].setHSV((unsigned)((((float)ledPos) / NUM_LEDS) * 255), 255, 200 - (((float)abs(i) * 2) / ledWidth) * 200);
+  }
+  FastLED.show();
+
   // See if there's any  touch data for us
   if (ts.bufferEmpty()) {
     return;
