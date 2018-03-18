@@ -156,3 +156,5 @@ void loop()
     tft.fillCircle(p.x, p.y, PENRADIUS, currentcolor);
   }
 }
+
+// vim: et ts=2
