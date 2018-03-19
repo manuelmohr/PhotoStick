@@ -21,7 +21,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 // Size of the color selection boxes and the paintbrush size
-#define COLORWIDTH 240
+#define COLORWIDTH 120
 int oldcolor, currentcolor;
 
 // How many leds in your strip?
@@ -34,6 +34,11 @@ int oldcolor, currentcolor;
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
+
+#define BUTTON_SIZE 60
+
+unsigned nextButtonX, nextButtonY;
+unsigned prevButtonX, prevButtonY;
 
 void setup(void)
 {
@@ -60,24 +65,79 @@ void setup(void)
     pos += boxHeight;
   }
 
+  nextButtonX = prevButtonX = tft.width() / 2 + BUTTON_SIZE / 2;
+  nextButtonY = tft.height() / 2 - (BUTTON_SIZE + BUTTON_SIZE / 2);
+  prevButtonY = tft.height() / 2 + BUTTON_SIZE;
+  tft.fillRect(nextButtonX, nextButtonY, BUTTON_SIZE, BUTTON_SIZE, ILI9341_WHITE);
+  tft.fillRect(prevButtonX, prevButtonY, BUTTON_SIZE, BUTTON_SIZE, ILI9341_WHITE);
+
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 }
 
-int ledWidth = 80;
-int ledPos = ledWidth / 2 + 1;
 CRGB ledColor = CRGB::White;
 
 #define WRAP(x) ((x + NUM_LEDS) % NUM_LEDS)
 
-void loop()
+bool insideButton(const TS_Point& p, unsigned buttonX, unsigned buttonY)
 {
-  leds[WRAP(ledPos - ledWidth / 2)] = CRGB::Black;
-  ++ledPos;
-  if (ledPos == NUM_LEDS) {
-    ledPos = 0;
+  return    p.x >= buttonX && p.x < buttonX + BUTTON_SIZE
+         && p.y >= buttonY && p.y < buttonY + BUTTON_SIZE;
+}
+
+#define NUM_ANIMS 2
+unsigned ledAnimNum = 0;
+
+void animBlink(unsigned call)
+{
+  const unsigned freq = 2;
+  const CRGB c = (call % freq < (freq / 2)) ? ledColor : CRGB::Black;
+  for (unsigned i = 0; i < NUM_LEDS; ++i) {
+    leds[i] = c;
   }
+}
+
+
+void animAlternate(unsigned call)
+{
+  const unsigned freq = 100;
+  const bool odd = (call % freq < (freq / 2));
+  for (unsigned i = 0; i < NUM_LEDS; ++i) {
+    if (i % 2 == odd) {
+      leds[i] = ledColor;
+    } else {
+      leds[i] = CRGB::Black;
+    }
+  }
+}
+
+void animShift(unsigned ledPos)
+{
+  const unsigned ledWidth = 80;
+
+  leds[WRAP(ledPos - ledWidth / 2)] = CRGB::Black;
   for (int i = -ledWidth / 2; i <= ledWidth / 2; ++i) {
     leds[WRAP(ledPos + i)] = ledColor;
+  }
+}
+
+void clearLeds()
+{
+  for (unsigned i = 0; i < NUM_LEDS; ++i) {
+    leds[i] = CRGB::Black;
+  }
+}
+
+unsigned numCall = 0;
+void loop()
+{
+  ++numCall;
+  switch (ledAnimNum) {
+  case 1:
+    animBlink(numCall);
+    break;
+  case 0:
+    animAlternate(numCall);
+    break;
   }
   FastLED.show();
 
@@ -93,8 +153,16 @@ void loop()
   p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
   p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
 
-  unsigned hue = (float(p.y) / tft.height()) * 255;
-  ledColor = CRGB(CHSV(hue, 255, 255));
+  if (p.x < 120) {
+    unsigned hue = (float(p.y) / tft.height()) * 255;
+    ledColor = CRGB(CHSV(hue, 255, 255));
+  } else if (insideButton(p, nextButtonX, nextButtonY)) {
+    clearLeds();
+    ledAnimNum = (ledAnimNum + 1) % NUM_ANIMS;
+  } else if (insideButton(p, prevButtonX, prevButtonY)) {
+    clearLeds();
+    ledAnimNum = (ledAnimNum - 1) % NUM_ANIMS;
+  }
 }
 
 // vim: et ts=2
