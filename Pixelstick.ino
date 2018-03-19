@@ -12,10 +12,6 @@
 #define TS_MAXX 3800
 #define TS_MAXY 4000
 
-// The STMPE610 uses hardware SPI on the shield, and #8
-#define STMPE_CS 8
-Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
-
 // TFT display and SD card will share the hardware SPI interface.
 // Hardware SPI pins are specific to the Arduino board type and
 // cannot be remapped to alternate pins.  For Arduino Uno,
@@ -28,12 +24,8 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 // SD card chip select
 #define SD_CS 4
 
-// Size of the color selection boxes and the paintbrush size
-#define COLORWIDTH 120
-int oldcolor, currentcolor;
-
 // How many leds in your strip?
-#define NUM_LEDS 20
+#define NUM_LEDS 144
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
 // need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
@@ -43,96 +35,23 @@ int oldcolor, currentcolor;
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 
-#define BUTTON_SIZE 60
-
-unsigned nextButtonX, nextButtonY;
-unsigned prevButtonX, prevButtonY;
-
 void setup(void)
 {
   Serial.begin(9600);
   Serial.println(F("Pixelstick"));
 
   tft.begin();
-  if (!ts.begin()) {
-    Serial.println("Couldn't start touchscreen controller");
-    while (1);
-  }
-  Serial.println("Touchscreen started");
 
-  Serial.print("Initializing SD card...");
+  Serial.print(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
-    Serial.println("failed!");
+    Serial.println(F("failed!"));
     while (1);
   }
-  Serial.println("OK!");
+  Serial.println(F("OK!"));
 
   tft.fillScreen(ILI9341_BLACK);
 
-  // make the color selection
-  const unsigned boxWidth = tft.width();
-  unsigned pos = 0;
-  for (unsigned hue = 0; hue < 256; ++hue) {
-    const CRGB c(CHSV(hue, 255, 255));
-    const uint16_t c565 = tft.color565(c.r, c.g, c.b);
-    const unsigned boxHeight = 1 + unsigned(hue % 5 == 0);
-    tft.fillRect(0, pos, COLORWIDTH, boxHeight, c565);
-    pos += boxHeight;
-  }
-
-  nextButtonX = prevButtonX = tft.width() / 2 + BUTTON_SIZE / 2;
-  nextButtonY = tft.height() / 2 - (BUTTON_SIZE + BUTTON_SIZE / 2);
-  prevButtonY = tft.height() / 2 + BUTTON_SIZE;
-  tft.fillRect(nextButtonX, nextButtonY, BUTTON_SIZE, BUTTON_SIZE, ILI9341_WHITE);
-  tft.fillRect(prevButtonX, prevButtonY, BUTTON_SIZE, BUTTON_SIZE, ILI9341_WHITE);
-
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-}
-
-CRGB ledColor = CRGB::White;
-
-#define WRAP(x) ((x + NUM_LEDS) % NUM_LEDS)
-
-bool insideButton(const TS_Point& p, unsigned buttonX, unsigned buttonY)
-{
-  return    p.x >= buttonX && p.x < buttonX + BUTTON_SIZE
-         && p.y >= buttonY && p.y < buttonY + BUTTON_SIZE;
-}
-
-#define NUM_ANIMS 2
-unsigned ledAnimNum = 0;
-
-void animBlink(unsigned call)
-{
-  const unsigned freq = 2;
-  const CRGB c = (call % freq < (freq / 2)) ? ledColor : CRGB::Black;
-  for (unsigned i = 0; i < NUM_LEDS; ++i) {
-    leds[i] = c;
-  }
-}
-
-
-void animAlternate(unsigned call)
-{
-  const unsigned freq = 100;
-  const bool odd = (call % freq < (freq / 2));
-  for (unsigned i = 0; i < NUM_LEDS; ++i) {
-    if (i % 2 == odd) {
-      leds[i] = ledColor;
-    } else {
-      leds[i] = CRGB::Black;
-    }
-  }
-}
-
-void animShift(unsigned ledPos)
-{
-  const unsigned ledWidth = 80;
-
-  leds[WRAP(ledPos - ledWidth / 2)] = CRGB::Black;
-  for (int i = -ledWidth / 2; i <= ledWidth / 2; ++i) {
-    leds[WRAP(ledPos + i)] = ledColor;
-  }
 }
 
 void clearLeds()
@@ -142,44 +61,9 @@ void clearLeds()
   }
 }
 
-unsigned numCall = 0;
 void loop()
 {
-  ++numCall;
-  switch (ledAnimNum) {
-  case 1:
-    animBlink(numCall);
-    break;
-  case 0:
-    animAlternate(numCall);
-    break;
-  }
-  FastLED.show();
-
-  bmpDraw("purple.bmp", (tft.width()  / 2), (tft.height() / 2));
-
-  // See if there's any touch data for us
-  if (ts.bufferEmpty()) {
-    return;
-  }
-
-  // Retrieve a point
-  TS_Point p = ts.getPoint();
-
-  // Scale from ~0->4000 to tft.width using the calibration #'s
-  p.x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-  p.y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-
-  if (p.x < 120) {
-    unsigned hue = (float(p.y) / tft.height()) * 255;
-    ledColor = CRGB(CHSV(hue, 255, 255));
-  } else if (insideButton(p, nextButtonX, nextButtonY)) {
-    clearLeds();
-    ledAnimNum = (ledAnimNum + 1) % NUM_ANIMS;
-  } else if (insideButton(p, prevButtonX, prevButtonY)) {
-    clearLeds();
-    ledAnimNum = (ledAnimNum - 1) % NUM_ANIMS;
-  }
+  bmpDraw("purple.bmp", 0, 0);
 }
 
 // This function opens a Windows Bitmap (BMP) file and
@@ -192,7 +76,7 @@ void loop()
 
 #define BUFFPIXEL 20
 
-void bmpDraw(char *filename, int16_t x, int16_t y) {
+void bmpDraw(const char *filename, int16_t x, int16_t y) {
 
   File     bmpFile;
   int      bmpWidth, bmpHeight;   // W+H in pixels
@@ -313,7 +197,7 @@ void bmpDraw(char *filename, int16_t x, int16_t y) {
         } // end onscreen
         Serial.print(F("Loaded in "));
         Serial.print(millis() - startTime);
-        Serial.println(" ms");
+        Serial.println(F(" ms"));
       } // end goodBmp
     }
   }
