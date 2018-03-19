@@ -51,6 +51,7 @@ void setup(void)
   tft.fillScreen(ILI9341_BLACK);
 
   FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.setBrightness(1);
 }
 
 void clearLeds()
@@ -60,15 +61,21 @@ void clearLeds()
   }
 }
 
-int16_t showRow = 0;
+uint16_t showRow = 0;
 void loop()
 {
-  bmpShow("purple.bmp", showRow);
+  if (showRow < NUM_LEDS) {
+    bmpShow("Test1.bmp", (showRow++) % NUM_LEDS);
+    delay(5);
+  } else {
+    clearLeds();
+  }
+  FastLED.show();
 }
 
 #define BUFFPIXEL 20
 
-void bmpShow(const char *filename, int16_t showRow)
+void bmpShow(const char *filename, uint16_t showRow)
 {
   File     bmpFile;
   int      bmpWidth, bmpHeight;   // W+H in pixels
@@ -137,6 +144,8 @@ void bmpShow(const char *filename, int16_t showRow)
     bmpHeight = -bmpHeight;
     flip      = false;
   }
+
+  row = showRow;
 
   // Seek to start of scan line.  It might seem labor-
   // intensive to be doing this on every line, but this
