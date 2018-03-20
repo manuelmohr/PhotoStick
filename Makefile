@@ -4,5 +4,5 @@ PORT ?= /dev/ttyACM0
 all: Pixelstick.ino
 	$(ARDUINO) --verify $<
 
-upload:
+upload: Pixelstick.ino
 	$(ARDUINO) --upload $< --port $(PORT)
