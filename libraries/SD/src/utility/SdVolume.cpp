@@ -22,7 +22,7 @@
 // raw block cache
 // init cacheBlockNumber_to invalid SD block number
 uint32_t SdVolume::cacheBlockNumber_ = 0XFFFFFFFF;
-cache_t  SdVolume::cacheBuffer_;     // 512 byte cache for Sd2Card
+cache_t  SdVolume::cacheBuffer_;     // 1024 byte cache for Sd2Card
 Sd2Card* SdVolume::sdCard_;          // pointer to SD card object
 uint8_t  SdVolume::cacheDirty_ = 0;  // cacheFlush() will write block if true
 uint32_t SdVolume::cacheMirrorBlock_ = 0;  // mirror  block for second FAT
@@ -117,6 +117,7 @@ uint8_t SdVolume::cacheRawBlock(uint32_t blockNumber, uint8_t action) {
   if (cacheBlockNumber_ != blockNumber) {
     if (!cacheFlush()) return false;
     if (!sdCard_->readBlock(blockNumber, cacheBuffer_.data)) return false;
+    if (!sdCard_->readBlock(blockNumber+1, cacheBuffer_.data+512)) return false;
     cacheBlockNumber_ = blockNumber;
   }
   cacheDirty_ |= action;
@@ -128,7 +129,7 @@ uint8_t SdVolume::cacheZeroBlock(uint32_t blockNumber) {
   if (!cacheFlush()) return false;
 
   // loop take less flash than memset(cacheBuffer_.data, 0, 512);
-  for (uint16_t i = 0; i < 512; i++) {
+  for (uint16_t i = 0; i < sizeof(cacheBuffer_.data); i++) {
     cacheBuffer_.data[i] = 0;
   }
   cacheBlockNumber_ = blockNumber;

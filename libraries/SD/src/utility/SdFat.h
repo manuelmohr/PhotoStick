@@ -409,22 +409,19 @@ class SdFile : public Print {
 /**
  * \brief Cache for an SD data block
  */
-struct cache_t {
-  union {
-             /** Used to access cached file data blocks. */
-    uint8_t  data[512];
-             /** Used to access cached FAT16 entries. */
-    uint16_t fat16[256];
-             /** Used to access cached FAT32 entries. */
-    uint32_t fat32[128];
-             /** Used to access cached directory entries. */
-    dir_t    dir[16];
-             /** Used to access a cached MasterBoot Record. */
-    mbr_t    mbr;
-             /** Used to access to a cached FAT boot sector. */
-    fbs_t    fbs;
-  };
-  uint8_t data2[512];
+union cache_t {
+           /** Used to access cached file data blocks. */
+  uint8_t  data[1024];
+           /** Used to access cached FAT16 entries. */
+  uint16_t fat16[512];
+           /** Used to access cached FAT32 entries. */
+  uint32_t fat32[256];
+           /** Used to access cached directory entries. */
+  dir_t    dir[16];
+           /** Used to access a cached MasterBoot Record. */
+  mbr_t    mbr;
+           /** Used to access to a cached FAT boot sector. */
+  fbs_t    fbs;
 };
 //------------------------------------------------------------------------------
 /**
@@ -502,7 +499,9 @@ class SdVolume {
   // value for action argument in cacheRawBlock to indicate cache dirty
   static uint8_t const CACHE_FOR_WRITE = 1;
 
-  static cache_t cacheBuffer_;        // 512 byte cache for device blocks
+public:
+  static cache_t cacheBuffer_;        // 1024 byte cache for device blocks
+private:
   static uint32_t cacheBlockNumber_;  // Logical number of block in the cache
   static Sd2Card* sdCard_;            // Sd2Card object for cache
   static uint8_t cacheDirty_;         // cacheFlush() will write block if true
