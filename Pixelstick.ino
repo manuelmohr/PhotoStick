@@ -2,7 +2,8 @@
 #include <SPI.h>
 #include <Wire.h>      // this is needed even tho we aren't using it
 #include <Adafruit_ILI9341.h>
-#include <SD.h>
+#include <Adafruit_STMPE610.h>
+#include "SD.h"
 #include "FastLED.h"
 
 // This is calibration data for the raw touch data to the screen coordinates
@@ -20,11 +21,15 @@
 #define TFT_DC 9
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
+// The STMPE610 uses hardware SPI on the shield, and #8
+#define STMPE_CS 8
+Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
+
 // SD card chip select
 #define SD_CS 4
 
 // How many leds in your strip?
-#define NUM_LEDS 144
+#define NUM_LEDS 2
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
 // need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
@@ -40,6 +45,11 @@ void setup(void)
   Serial.println(F("Pixelstick"));
 
   tft.begin();
+  if (!ts.begin()) {
+    Serial.println(F("Couldn't start touchscreen controller"));
+    while (1);
+  }
+  Serial.println(F("Touchscreen started"));
 
   Serial.print(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
