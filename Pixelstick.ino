@@ -81,6 +81,8 @@ void setup(void)
 
   bmpOpen("TestPad.bmp");
   bmpLoadRow(0);
+
+  file.close();
 }
 
 void loop()
@@ -190,8 +192,6 @@ void bmpLoadRow(uint32_t row)
     Serial.print(F(": "));
     Serial.println(c, HEX);
   }
-
-  file.close();
 }
 
 // These read 16- and 32-bit types from the SD card file.
