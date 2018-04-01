@@ -19,11 +19,11 @@
 // The display also uses hardware SPI, plus #9 & #10
 #define TFT_CS 10
 #define TFT_DC 9
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+Adafruit_ILI9341 *tft = nullptr;
 
 // The STMPE610 uses hardware SPI on the shield, and #8
 #define STMPE_CS 8
-Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
+Adafruit_STMPE610 *ts = nullptr;
 
 // SD card chip select
 #define SD_CS 4
@@ -39,9 +39,58 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 #define DATA_PIN 2
 
 CRGB *leds = nullptr;
-CRGB testLed;
 
-uint8_t memory[1024];
+template<size_t SIZE> class Arena
+{
+private:
+  uint8_t memory[SIZE];
+  size_t  current;
+
+public:
+  Arena() : current(0) {}
+  Arena(const Arena&) = delete;
+  Arena& operator=(const Arena&) = delete;
+
+  void *allocate(size_t size)
+  {
+    if (current + size > SIZE) {
+      return nullptr;
+    }
+    void *ret = (void*)(memory + current);
+    current += size;
+    return ret;
+  }
+
+  template<typename T> void destroy(T *p)
+  {
+    if (p != nullptr) {
+      p->~T();
+    }
+  }
+
+  size_t reset()
+  {
+    size_t old = current;
+    current = 0;
+    return old;
+  }
+
+  size_t set(size_t pos)
+  {
+    size_t old = current;
+    if (pos < SIZE) {
+      current = pos;
+    }
+    return old;
+  }
+};
+
+Arena<1024> arena;
+
+template<size_t SIZE> void *operator new(size_t size, Arena<SIZE>& a)
+{
+  return a.allocate(size);
+}
 
 struct BMPFile
 {
@@ -49,7 +98,9 @@ struct BMPFile
   boolean  flip;
   uint32_t height;
   uint32_t imageOffset;
-} bmpFile;
+};
+
+BMPFile *bmpFile = nullptr;
 
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr)
 {
@@ -58,33 +109,47 @@ __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr)
   }
 }
 
+void initScreen()
+{
+  tft = new(arena) Adafruit_ILI9341(TFT_CS, TFT_DC);
+  ts = new(arena) Adafruit_STMPE610(STMPE_CS);
+
+  Serial.print(F("Initializing touchscreen..."));
+  tft->begin();
+  if (!ts->begin()) {
+    panic(F("failed!"));
+  }
+  Serial.println(F("OK!"));
+
+  tft->fillScreen(ILI9341_BLACK);
+}
+
+void initSdCard()
+{
+  SD = new(arena) SDClass;
+  // TODO Fix arena size
+  SdVolume::initCacheBuffer(arena.allocate(1024));
+  Serial.print(F("Initializing SD card..."));
+  if (!SD->begin(SD_CS)) {
+    panic(F("failed!"));
+  }
+  Serial.println(F("OK!"));
+}
+
 void setup(void)
 {
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
 
-  Serial.print(F("Initializing touchscreen..."));
-  tft.begin();
-  if (!ts.begin()) {
-    panic(F("failed!"));
-  }
-  Serial.println(F("OK!"));
-
-  Serial.print(F("Initializing SD card..."));
-  if (!SD.begin(SD_CS)) {
-    panic(F("failed!"));
-  }
-  Serial.println(F("OK!"));
-
-  tft.fillScreen(ILI9341_BLACK);
+  initScreen();
+  initSdCard();
 
 //  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 //  FastLED.setBrightness(1);
 
-  SdVolume::initCacheBuffer((void*)memory);
   bmpOpen("TestPad.bmp");
   bmpLoadRow(0);
-  bmpFile.file.close();
+  bmpFile->file.close();
 }
 
 void loop()
@@ -97,8 +162,9 @@ void bmpOpen(const char *filename)
   Serial.print(F("Loading image "));
   Serial.println(filename);
 
-  bmpFile.file = SD.open(filename);
-  if (!bmpFile.file) {
+  bmpFile = new(arena) BMPFile;
+  bmpFile->file = SD->open(filename);
+  if (!bmpFile->file) {
     panic(F("File not found"));
   }
 
@@ -109,9 +175,9 @@ void bmpOpen(const char *filename)
   Serial.print(F("File size: "));
   Serial.println(bmpRead32());
   (void)bmpRead32(); // Ignore reserved word
-  bmpFile.imageOffset = bmpRead32();
+  bmpFile->imageOffset = bmpRead32();
   Serial.print(F("Image Offset: "));
-  Serial.println(bmpFile.imageOffset, DEC);
+  Serial.println(bmpFile->imageOffset, DEC);
 
   // Read BMP Info header
   Serial.print(F("Header size: "));
@@ -127,8 +193,8 @@ void bmpOpen(const char *filename)
     height = -height;
     flip   = false;
   }
-  bmpFile.height = height;
-  bmpFile.flip   = flip;
+  bmpFile->height = height;
+  bmpFile->flip   = flip;
 
   if (bmpRead16() != 1) {
     panic(F("Planes must be 1"));
@@ -148,7 +214,7 @@ void bmpOpen(const char *filename)
   // This is not canon but has been observed in the wild.
   Serial.print(F("Image size: 341"));
   Serial.print('x');
-  Serial.println(bmpFile.height);
+  Serial.println(bmpFile->height);
   Serial.print(F("Row size: "));
   Serial.println(rowSize);
 }
@@ -164,17 +230,17 @@ void bmpLoadRow(uint32_t row)
   // place if the file position actually needs to change
   // (avoids a lot of cluster math in SD library).
   uint32_t pos;
-  if (bmpFile.flip) { // Normal case
-    pos = bmpFile.imageOffset + (bmpFile.height - 1 - row) * rowSize;
+  if (bmpFile->flip) { // Normal case
+    pos = bmpFile->imageOffset + (bmpFile->height - 1 - row) * rowSize;
   } else {
-    pos = bmpFile.imageOffset + row * rowSize;
+    pos = bmpFile->imageOffset + row * rowSize;
   }
 
-  File& file = bmpFile.file;
+  File& file = bmpFile->file;
   if (file.position() != pos) {
     file.seek(pos);
   }
-  uint8_t *rawData = memory;
+  uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
   Serial.println(F("Values from SD card:"));
   for (uint16_t i = 0; i < 32; i += 2) {
     uint16_t c;
@@ -201,7 +267,7 @@ void bmpLoadRow(uint32_t row)
 // May need to reverse subscript order if porting elsewhere.
 uint16_t bmpRead16()
 {
-  File& f = bmpFile.file;
+  File& f = bmpFile->file;
   uint16_t result;
   ((uint8_t*)&result)[0] = f.read(); // LSB
   ((uint8_t*)&result)[1] = f.read(); // MSB
@@ -210,7 +276,7 @@ uint16_t bmpRead16()
 
 uint32_t bmpRead32()
 {
-  File& f = bmpFile.file;
+  File& f = bmpFile->file;
   uint32_t result;
   ((uint8_t*)&result)[0] = f.read(); // LSB
   ((uint8_t*)&result)[1] = f.read();

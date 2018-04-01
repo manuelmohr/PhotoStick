@@ -105,7 +105,7 @@ private:
   friend boolean callback_openPath(SdFile&, const char *, boolean, void *); 
 };
 
-extern SDClass SD;
+extern SDClass *SD;
 
 };
 
