@@ -438,7 +438,10 @@ class SdVolume {
   static uint8_t* cacheClear(void) {
     cacheFlush();
     cacheBlockNumber_ = 0XFFFFFFFF;
-    return cacheBuffer_.data;
+    return cacheBuffer_->data;
+  }
+  static void initCacheBuffer(void *mem) {
+    cacheBuffer_ = (cache_t*)mem;
   }
   /**
    * Initialize a FAT volume.  Try partition one first then try super
@@ -499,9 +502,7 @@ class SdVolume {
   // value for action argument in cacheRawBlock to indicate cache dirty
   static uint8_t const CACHE_FOR_WRITE = 1;
 
-public:
-  static cache_t cacheBuffer_;        // 1024 byte cache for device blocks
-private:
+  static cache_t* cacheBuffer_;       // 1024 byte cache for device blocks
   static uint32_t cacheBlockNumber_;  // Logical number of block in the cache
   static Sd2Card* sdCard_;            // Sd2Card object for cache
   static uint8_t cacheDirty_;         // cacheFlush() will write block if true

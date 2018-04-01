@@ -41,6 +41,8 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 CRGB *leds = nullptr;
 CRGB testLed;
 
+uint8_t memory[1024];
+
 struct BMPFile
 {
   File     file;
@@ -79,6 +81,7 @@ void setup(void)
 //  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
 //  FastLED.setBrightness(1);
 
+  SdVolume::initCacheBuffer((void*)memory);
   bmpOpen("TestPad.bmp");
   bmpLoadRow(0);
   bmpFile.file.close();
@@ -171,7 +174,7 @@ void bmpLoadRow(uint32_t row)
   if (file.position() != pos) {
     file.seek(pos);
   }
-  uint8_t *rawData = &SdVolume::cacheBuffer_.data[0];
+  uint8_t *rawData = memory;
   Serial.println(F("Values from SD card:"));
   for (uint16_t i = 0; i < 32; i += 2) {
     uint16_t c;
