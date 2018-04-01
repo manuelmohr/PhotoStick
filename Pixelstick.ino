@@ -6,6 +6,9 @@
 #include "SD.h"
 #include "FastLED.h"
 
+#include "arena.hpp"
+#include "util.hpp"
+
 // This is calibration data for the raw touch data to the screen coordinates
 #define TS_MINX 150
 #define TS_MINY 130
@@ -40,58 +43,6 @@ Adafruit_STMPE610 *ts = nullptr;
 
 CRGB *leds = nullptr;
 
-template<size_t SIZE> class Arena
-{
-private:
-  uint8_t memory[SIZE];
-  size_t  current;
-
-public:
-  Arena() : current(0) {}
-  Arena(const Arena&) = delete;
-  Arena& operator=(const Arena&) = delete;
-
-  void *allocate(size_t size)
-  {
-    if (current + size > SIZE) {
-      return nullptr;
-    }
-    void *ret = (void*)(memory + current);
-    current += size;
-    return ret;
-  }
-
-  template<typename T> void destroy(T *p)
-  {
-    if (p != nullptr) {
-      p->~T();
-    }
-  }
-
-  size_t reset()
-  {
-    size_t old = current;
-    current = 0;
-    return old;
-  }
-
-  size_t set(size_t pos)
-  {
-    size_t old = current;
-    if (pos < SIZE) {
-      current = pos;
-    }
-    return old;
-  }
-};
-
-Arena<1024> arena;
-
-template<size_t SIZE> void *operator new(size_t size, Arena<SIZE>& a)
-{
-  return a.allocate(size);
-}
-
 struct BMPFile
 {
   File     file;
@@ -102,17 +53,29 @@ struct BMPFile
 
 BMPFile *bmpFile = nullptr;
 
-__attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr)
+#define ARENA_SIZE (1024 + 256)
+
+Arena<ARENA_SIZE> arena;
+
+template<size_t SIZE> void *operator new(size_t size, Arena<SIZE>& a)
 {
-  Serial.println(pgstr);
-  while (1) {
-  }
+  return a.allocate(size);
+}
+
+void *operator new(size_t size, void *ptr)
+{
+  return ptr;
+}
+
+void operator delete(void *obj, void *alloc)
+{
+  return;
 }
 
 void initScreen()
 {
-  tft = new(arena) Adafruit_ILI9341(TFT_CS, TFT_DC);
-  ts = new(arena) Adafruit_STMPE610(STMPE_CS);
+  tft = new (arena) Adafruit_ILI9341(TFT_CS, TFT_DC);
+  ts = new (arena) Adafruit_STMPE610(STMPE_CS);
 
   Serial.print(F("Initializing touchscreen..."));
   tft->begin();
@@ -124,10 +87,16 @@ void initScreen()
   tft->fillScreen(ILI9341_BLACK);
 }
 
+void deinitScreen()
+{
+  tft->fillScreen(ILI9341_BLACK);
+  arena.destroy(ts);
+  arena.destroy(tft);
+}
+
 void initSdCard()
 {
-  SD = new(arena) SDClass;
-  // TODO Fix arena size
+  SD = new (arena) SDClass;
   SdVolume::initCacheBuffer(arena.allocate(1024));
   Serial.print(F("Initializing SD card..."));
   if (!SD->begin(SD_CS)) {
@@ -136,20 +105,31 @@ void initSdCard()
   Serial.println(F("OK!"));
 }
 
+void deinitSdCard()
+{
+  arena.destroy(SD);
+}
+
 void setup(void)
 {
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
 
   initScreen();
+  deinitScreen();
+  arena.reset();
+
   initSdCard();
-
-//  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-//  FastLED.setBrightness(1);
-
   bmpOpen("TestPad.bmp");
-  bmpLoadRow(0);
+  for (uint16_t row = 0; row < 1; ++row) {
+    bmpLoadRow(row);
+    FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
+    FastLED.setBrightness(1);
+    FastLED.show();
+  }
   bmpFile->file.close();
+  deinitSdCard();
+  arena.reset();
 }
 
 void loop()
@@ -162,7 +142,7 @@ void bmpOpen(const char *filename)
   Serial.print(F("Loading image "));
   Serial.println(filename);
 
-  bmpFile = new(arena) BMPFile;
+  bmpFile = new (arena) BMPFile;
   bmpFile->file = SD->open(filename);
   if (!bmpFile->file) {
     panic(F("File not found"));
@@ -223,12 +203,6 @@ void bmpLoadRow(uint32_t row)
 {
   const uint32_t rowSize = (BMP_WIDTH * 3U + 3U) & ~3U;
 
-  // Seek to start of scan line.  It might seem labor-
-  // intensive to be doing this on every line, but this
-  // method covers a lot of gritty details like cropping
-  // and scanline padding.  Also, the seek only takes
-  // place if the file position actually needs to change
-  // (avoids a lot of cluster math in SD library).
   uint32_t pos;
   if (bmpFile->flip) { // Normal case
     pos = bmpFile->imageOffset + (bmpFile->height - 1 - row) * rowSize;
@@ -240,26 +214,21 @@ void bmpLoadRow(uint32_t row)
   if (file.position() != pos) {
     file.seek(pos);
   }
+
   uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
-  Serial.println(F("Values from SD card:"));
-  for (uint16_t i = 0; i < 32; i += 2) {
+  uint8_t *ledMem  = rawData + 1024 - NUM_LEDS * sizeof(CRGB);
+  for (int16_t i = NUM_LEDS - 1; i >= 0; --i) {
     uint16_t c;
-    c  = rawData[i+0] << 8U;
-    c |= rawData[i+1] << 0U;
+    c  = rawData[2 * i + 0] << 8U;
+    c |= rawData[2 * i + 1] << 0U;
 
-    Serial.print(i, HEX);
-    Serial.print(F(": "));
-    Serial.println(c, HEX);
-  }
-  for (uint16_t i = 500; i < 532; i += 2) {
-    uint16_t c;
-    c  = rawData[i+0] << 8U;
-    c |= rawData[i+1] << 0U;
+    const uint8_t r = (c & 0x7C00U) >> 10;
+    const uint8_t g = (c & 0x03E0U) >>  5;
+    const uint8_t b = (c & 0x001FU) >>  0;
 
-    Serial.print(i, HEX);
-    Serial.print(F(": "));
-    Serial.println(c, HEX);
+    new ((void*)&ledMem[i]) CRGB(r, g, b);
   }
+  leds = (CRGB*)ledMem;
 }
 
 // These read 16- and 32-bit types from the SD card file.
