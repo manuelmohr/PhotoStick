@@ -53,7 +53,7 @@ struct BMPFile
 
 BMPFile *bmpFile = nullptr;
 
-#define ARENA_SIZE (1024 + 256)
+#define ARENA_SIZE (1024 + sizeof(SDClass))
 
 Arena<ARENA_SIZE> arena;
 
