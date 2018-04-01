@@ -81,8 +81,7 @@ void setup(void)
 
   bmpOpen("TestPad.bmp");
   bmpLoadRow(0);
-
-  file.close();
+  bmpFile.file.close();
 }
 
 void loop()
