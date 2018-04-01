@@ -443,6 +443,9 @@ class SdVolume {
   static void initCacheBuffer(void *mem) {
     cacheBuffer_ = (cache_t*)mem;
   }
+  static void *getRawCacheBuffer() {
+    return cacheBuffer_;
+  }
   /**
    * Initialize a FAT volume.  Try partition one first then try super
    * floppy format.
