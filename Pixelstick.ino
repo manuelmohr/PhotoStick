@@ -1,32 +1,11 @@
-#include <Adafruit_GFX.h>
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_STMPE610.h>
 #include "SD.h"
 #include "FastLED.h"
+#include "GUIslice.h"
+#include "GUIslice_ex.h"
+#include "GUIslice_drv.h"
 
 #include "arena.hpp"
 #include "util.hpp"
-
-// This is calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 150
-#define TS_MINY 130
-#define TS_MAXX 3800
-#define TS_MAXY 4000
-
-// TFT display and SD card will share the hardware SPI interface.
-// Hardware SPI pins are specific to the Arduino board type and
-// cannot be remapped to alternate pins.  For Arduino Uno,
-// Duemilanove, etc., pin 11 = MOSI, pin 12 = MISO, pin 13 = SCK.
-// The display also uses hardware SPI, plus #9 & #10
-#define TFT_CS 10
-#define TFT_DC 9
-Adafruit_ILI9341 *tft = nullptr;
-
-// The STMPE610 uses hardware SPI on the shield, and #8
-#define STMPE_CS 8
-Adafruit_STMPE610 *ts = nullptr;
 
 // SD card chip select
 #define SD_CS 4
@@ -53,7 +32,26 @@ struct BMPFile
 
 BMPFile *bmpFile = nullptr;
 
-#define ARENA_SIZE (1024 + sizeof(SDClass))
+#define GUI_MAX_FONTS           2
+#define GUI_MAX_PAGES           1
+#define GUI_MAX_ELEMS_RAM       1
+#define GUI_MAX_ELEMS_PER_PAGE 17
+
+gslc_tsGui     *guiGui      = nullptr;
+gslc_tsDriver  *guiDriver   = nullptr;
+gslc_tsPage    *guiPages    = nullptr;
+gslc_tsElem    *guiElem     = nullptr;
+gslc_tsElemRef *guiElemRefs = nullptr;
+// Must be link-time constant as it is referenced by gslc_ElemCreateTxt_P
+// and other macros, to be put into PROGMEM.
+gslc_tsFont     guiFonts[GUI_MAX_FONTS];
+
+enum {E_PG_MAIN};
+enum {E_ELEM_BOX,E_ELEM_BTN_QUIT,E_ELEM_COLOR,
+      E_SLIDER_R,E_SLIDER_G,E_SLIDER_B,E_ELEM_BTN_ROOM};
+enum {E_FONT_TXT,E_FONT_TITLE};
+
+#define ARENA_SIZE (1024 + sizeof(SDClass) + sizeof(BMPFile))
 
 Arena<ARENA_SIZE> arena;
 
@@ -69,35 +67,106 @@ void *operator new(size_t size, void *ptr)
 
 void operator delete(void *obj, void *alloc)
 {
-  return;
+}
+
+static int16_t glscDebugOut(char ch)
+{
+  Serial.write(ch);
+  return 0;
+}
+
+bool CbBtnQuit(void* pvGui,void *pvElemRef,gslc_teTouch eTouch,int16_t nX,int16_t nY)
+{
+  return true;
 }
 
 void initScreen()
 {
-  tft = new (arena) Adafruit_ILI9341(TFT_CS, TFT_DC);
-  ts = new (arena) Adafruit_STMPE610(STMPE_CS);
+  gslc_InitDebug(&glscDebugOut);
 
   Serial.print(F("Initializing touchscreen..."));
-  tft->begin();
-  if (!ts->begin()) {
-    panic(F("failed!"));
+  guiGui      = new (arena) gslc_tsGui();
+  guiDriver   = new (arena) gslc_tsDriver();
+  guiPages    = (gslc_tsPage*)arena.allocate(GUI_MAX_PAGES * sizeof(*guiPages));
+  for (uint8_t i = 0; i < GUI_MAX_PAGES; ++i) {
+    new ((void*)&guiPages[i]) gslc_tsPage();
   }
-  Serial.println(F("OK!"));
+  guiElem     = new (arena) gslc_tsElem();
+  guiElemRefs = (gslc_tsElemRef*)arena.allocate(GUI_MAX_ELEMS_PER_PAGE * sizeof(*guiElemRefs));
+  for (uint8_t i = 0; i < GUI_MAX_ELEMS_PER_PAGE; ++i) {
+    new ((void*)&guiElemRefs[i]) gslc_tsElemRef();
+  }
 
-  tft->fillScreen(ILI9341_BLACK);
+  if (!gslc_Init(guiGui, guiDriver, guiPages, GUI_MAX_PAGES, guiFonts, GUI_MAX_FONTS)) {
+    panic(F("failed1"));
+  }
+
+  if (!gslc_FontAdd(guiGui, E_FONT_TXT, GSLC_FONTREF_PTR, nullptr, 1)) {
+    panic(F("failed2"));
+  }
+  if (!gslc_FontAdd(guiGui, E_FONT_TITLE, GSLC_FONTREF_PTR, nullptr, 3)) {
+    panic(F("failed3"));
+  }
+
+  gslc_PageAdd(guiGui,E_PG_MAIN,guiElem,GUI_MAX_ELEMS_RAM,guiElemRefs,GUI_MAX_ELEMS_PER_PAGE);
+
+  // Background flat color
+  gslc_SetBkgndColor(guiGui,GSLC_COL_GRAY_DK2);
+
+  // Create Title with offset shadow
+  #define TMP_COL1 (gslc_tsColor){ 32, 32, 60}
+  #define TMP_COL2 (gslc_tsColor){128,128,240}
+  // Note: must use title Font ID
+  gslc_ElemCreateTxt_P(guiGui,98,E_PG_MAIN,2,2,320,50,"Pixelstick",&guiFonts[1],
+          TMP_COL1,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_MID,false,false);
+  gslc_ElemCreateTxt_P(guiGui,99,E_PG_MAIN,0,0,320,50,"Pixelstick",&guiFonts[1],
+          TMP_COL2,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_MID,false,false);
+
+  // Create background box
+  gslc_ElemCreateBox_P(guiGui,200,E_PG_MAIN,10,50,300,180,GSLC_COL_WHITE,GSLC_COL_BLACK,true,true,NULL,NULL);
+
+  // Create dividers
+  gslc_ElemCreateBox_P(guiGui,201,E_PG_MAIN,20,100,280,1,GSLC_COL_GRAY_DK3,GSLC_COL_BLACK,true,true,NULL,NULL);
+  gslc_ElemCreateBox_P(guiGui,202,E_PG_MAIN,235,60,1,35,GSLC_COL_GRAY_DK3,GSLC_COL_BLACK,true,true,NULL,NULL);
+
+  // Create dummy selector
+  gslc_ElemCreateTxt_P(guiGui,100,E_PG_MAIN,20,65,100,20,"Selected Room:",&guiFonts[0],
+          GSLC_COL_GRAY_LT2,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_LEFT,false,true);
+
+  gslc_ElemCreateTxt_P(guiGui,105,E_PG_MAIN,160,115,120,20,"Set LED RGB:",&guiFonts[0],
+          GSLC_COL_WHITE,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_LEFT,false,true);
+
+  // Create three sliders (R,G,B) and assign callback function
+  // that is invoked upon change. The common callback will update
+  // the color box.
+
+  gslc_ElemCreateTxt_P(guiGui,109,E_PG_MAIN,250,230,60,10,"GUIslice Example",&guiFonts[0],
+          GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_COL_BLACK,GSLC_ALIGN_MID_RIGHT,false,false);
+
+  gslc_SetPageCur(guiGui, E_PG_MAIN);
+  Serial.println(F("successful"));
 }
 
 void deinitScreen()
 {
-  tft->fillScreen(ILI9341_BLACK);
-  arena.destroy(ts);
-  arena.destroy(tft);
+  gslc_SetBkgndColor(guiGui,GSLC_COL_BLACK);
+  gslc_Update(guiGui);
+
+  for (uint8_t i = 0; i < GUI_MAX_ELEMS_PER_PAGE; ++i) {
+    arena.destroy(&guiElemRefs[i]);
+  }
+  arena.destroy(guiElem);
+  for (uint8_t i = 0; i < GUI_MAX_PAGES; ++i) {
+    arena.destroy(&guiPages[i]);
+  }
+  arena.destroy(guiDriver);
+  arena.destroy(guiGui);
 }
 
 void initSdCard()
 {
-  SD = new (arena) SDClass;
   SdVolume::initCacheBuffer(arena.allocate(1024));
+  SD = new (arena) SDClass();
   Serial.print(F("Initializing SD card..."));
   if (!SD->begin(SD_CS)) {
     panic(F("failed!"));
@@ -115,25 +184,34 @@ void setup(void)
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
 
+#if 0
   initScreen();
+  gslc_Update(guiGui);
+  delay(10000);
   deinitScreen();
   arena.reset();
+#endif
 
   initSdCard();
   bmpOpen("TestPad.bmp");
   for (uint16_t row = 0; row < 1; ++row) {
     bmpLoadRow(row);
+    #if 0
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
     FastLED.setBrightness(1);
     FastLED.show();
+    #endif
   }
   bmpFile->file.close();
   deinitSdCard();
   arena.reset();
+
+  initScreen();
 }
 
 void loop()
 {
+  gslc_Update(guiGui);
 }
 
 void bmpOpen(const char *filename)
