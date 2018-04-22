@@ -206,7 +206,7 @@ void setup(void)
   deinitSdCard();
   arena.reset();
 
-  initScreen();
+  //initScreen();
 }
 
 void loop()
