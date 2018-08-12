@@ -197,6 +197,10 @@ void setup(void)
 
   initSdCard();
   pixelOpen("stripes.pix");
+  pixelLoadColumn(0);
+  FastLED.setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(25);
+  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
   /*
   pixelFile->file.close();
   deinitSdCard();
@@ -206,7 +210,7 @@ void setup(void)
   //initScreen();
 }
 
-uint16_t col = 0;
+uint16_t col = 1;
 
 void loop()
 {
@@ -214,13 +218,11 @@ void loop()
   gslc_Update(guiGui);
 #endif
 
-  pixelLoadColumn(col);
 #if 1
-  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-  FastLED.setBrightness(50);
   FastLED.show();
 #endif
   col = (col + 1) % pixelFile->columns;
+  pixelLoadColumn(col);
 }
 
 void pixelOpen(const char *filename)
@@ -252,13 +254,6 @@ void pixelLoadColumn(uint16_t col)
   (void)file.read();
 
   uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
-#if 0
-  for (uint16_t i = 0; i < 10; ++i) {
-    Serial.println(rawData[3 * i + 0], HEX);
-    Serial.println(rawData[3 * i + 1], HEX);
-    Serial.println(rawData[3 * i + 2], HEX);
-  }
-#endif
   leds = (CRGB*)rawData;
 }
 
