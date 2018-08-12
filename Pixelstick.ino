@@ -13,8 +13,6 @@
 // How many leds in your strip?
 #define NUM_LEDS 288
 
-#define BMP_WIDTH 341
-
 // For led chips like Neopixels, which have a data line, ground, and power, you just
 // need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
 // ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
@@ -22,15 +20,13 @@
 
 CRGB *leds = nullptr;
 
-struct BMPFile
+struct PixelFile
 {
   File     file;
-  boolean  flip;
-  uint32_t height;
-  uint32_t imageOffset;
+  uint16_t columns;
 };
 
-BMPFile *bmpFile = nullptr;
+PixelFile *pixelFile = nullptr;
 
 #define GUI_MAX_FONTS           2
 #define GUI_MAX_PAGES           1
@@ -51,7 +47,7 @@ enum {E_ELEM_BOX,E_ELEM_BTN_QUIT,E_ELEM_COLOR,
       E_SLIDER_R,E_SLIDER_G,E_SLIDER_B,E_ELEM_BTN_ROOM};
 enum {E_FONT_TXT,E_FONT_TITLE};
 
-#define ARENA_SIZE (1024 + sizeof(SDClass) + sizeof(BMPFile))
+#define ARENA_SIZE (1024 + sizeof(SDClass) + sizeof(PixelFile))
 
 Arena<ARENA_SIZE> arena;
 
@@ -193,16 +189,16 @@ void setup(void)
 #endif
 
   initSdCard();
-  bmpOpen("TestPad.bmp");
-  for (uint16_t row = 0; row < 1; ++row) {
-    bmpLoadRow(row);
-    #if 0
+  pixelOpen("stripes.pix");
+  for (uint16_t col = 0; col < 1; ++col) {
+    pixelLoadColumn(col);
+    #if 1
     FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
     FastLED.setBrightness(1);
     FastLED.show();
     #endif
   }
-  bmpFile->file.close();
+  pixelFile->file.close();
   deinitSdCard();
   arena.reset();
 
@@ -214,121 +210,43 @@ void loop()
   gslc_Update(guiGui);
 }
 
-void bmpOpen(const char *filename)
+void pixelOpen(const char *filename)
 {
   Serial.println();
-  Serial.print(F("Loading image "));
+  Serial.print(F("Loading pixels "));
   Serial.println(filename);
 
-  bmpFile = new (arena) BMPFile;
-  bmpFile->file = SD->open(filename);
-  if (!bmpFile->file) {
+  pixelFile = new (arena) PixelFile;
+  pixelFile->file = SD->open(filename);
+  if (!pixelFile->file) {
     panic(F("File not found"));
   }
 
-  // Parse BMP header
-  if (bmpRead16() != 0x4D42) {
-    panic(F("Invalid header"));
-  }
-  Serial.print(F("File size: "));
-  Serial.println(bmpRead32());
-  (void)bmpRead32(); // Ignore reserved word
-  bmpFile->imageOffset = bmpRead32();
-  Serial.print(F("Image Offset: "));
-  Serial.println(bmpFile->imageOffset, DEC);
-
-  // Read BMP Info header
-  Serial.print(F("Header size: "));
-  Serial.println(bmpRead32());
-
-  if (bmpRead32() != BMP_WIDTH) {
-    panic(F("Width must be 341"));
-  }
-
-  uint32_t height = bmpRead32();
-  boolean  flip   = true;
-  if (height < 0) {
-    height = -height;
-    flip   = false;
-  }
-  bmpFile->height = height;
-  bmpFile->flip   = flip;
-
-  if (bmpRead16() != 1) {
-    panic(F("Planes must be 1"));
-  }
-  if (bmpRead16() != 16) {
-    panic(F("Depth must be 16"));
-  }
-  const uint32_t depth = bmpRead32();
-  if (depth != 0 && depth != 3) {
-    panic(F("Must be uncompressed"));
-  }
-
-  // BMP rows are padded (if needed) to 4-byte boundary
-  const uint32_t rowSize = (BMP_WIDTH * 3U + 3U) & ~3U;
-
-  // If bmpHeight is negative, image is in top-down order.
-  // This is not canon but has been observed in the wild.
-  Serial.print(F("Image size: 341"));
-  Serial.print('x');
-  Serial.println(bmpFile->height);
-  Serial.print(F("Row size: "));
-  Serial.println(rowSize);
+  const uint16_t columns = pixelRead16();
+  Serial.print(F("Columns: "));
+  Serial.println(columns);
+  pixelFile->columns = columns;
 }
 
-void bmpLoadRow(uint32_t row)
+void pixelLoadColumn(uint16_t col)
 {
-  const uint32_t rowSize = (BMP_WIDTH * 3U + 3U) & ~3U;
+  const uint32_t pos = (col + 1) * 1024;
 
-  uint32_t pos;
-  if (bmpFile->flip) { // Normal case
-    pos = bmpFile->imageOffset + (bmpFile->height - 1 - row) * rowSize;
-  } else {
-    pos = bmpFile->imageOffset + row * rowSize;
-  }
-
-  File& file = bmpFile->file;
+  File& file = pixelFile->file;
   if (file.position() != pos) {
     file.seek(pos);
   }
 
   uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
-  uint8_t *ledMem  = rawData + 1024 - NUM_LEDS * sizeof(CRGB);
-  for (int16_t i = NUM_LEDS - 1; i >= 0; --i) {
-    uint16_t c;
-    c  = rawData[2 * i + 0] << 8U;
-    c |= rawData[2 * i + 1] << 0U;
-
-    const uint8_t r = (c & 0x7C00U) >> 10;
-    const uint8_t g = (c & 0x03E0U) >>  5;
-    const uint8_t b = (c & 0x001FU) >>  0;
-
-    new ((void*)&ledMem[i]) CRGB(r, g, b);
-  }
-  leds = (CRGB*)ledMem;
+  leds = (CRGB*)rawData;
 }
 
-// These read 16- and 32-bit types from the SD card file.
-// BMP data is stored little-endian, Arduino is little-endian too.
-// May need to reverse subscript order if porting elsewhere.
-uint16_t bmpRead16()
+uint16_t pixelRead16()
 {
-  File& f = bmpFile->file;
+  File& f = pixelFile->file;
   uint16_t result;
   ((uint8_t*)&result)[0] = f.read(); // LSB
   ((uint8_t*)&result)[1] = f.read(); // MSB
-  return result;
-}
-
-uint32_t bmpRead32()
-{
-  File& f = bmpFile->file;
-  uint32_t result;
-  ((uint8_t*)&result)[0] = f.read(); // LSB
-  ((uint8_t*)&result)[1] = f.read();
-  ((uint8_t*)&result)[2] = f.read();
-  ((uint8_t*)&result)[3] = f.read(); // MSB
   return result;
 }
 
