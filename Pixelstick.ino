@@ -1,8 +1,11 @@
 #include "SD.h"
 #include "FastLED.h"
+
+#ifdef GUI
 #include "GUIslice.h"
 #include "GUIslice_ex.h"
 #include "GUIslice_drv.h"
+#endif
 
 #include "arena.hpp"
 #include "util.hpp"
@@ -28,6 +31,7 @@ struct PixelFile
 
 PixelFile *pixelFile = nullptr;
 
+#ifdef GUI
 #define GUI_MAX_FONTS           2
 #define GUI_MAX_PAGES           1
 #define GUI_MAX_ELEMS_RAM       1
@@ -46,6 +50,7 @@ enum {E_PG_MAIN};
 enum {E_ELEM_BOX,E_ELEM_BTN_QUIT,E_ELEM_COLOR,
       E_SLIDER_R,E_SLIDER_G,E_SLIDER_B,E_ELEM_BTN_ROOM};
 enum {E_FONT_TXT,E_FONT_TITLE};
+#endif
 
 #define ARENA_SIZE (1024 + sizeof(SDClass) + sizeof(PixelFile))
 
@@ -65,6 +70,7 @@ void operator delete(void *obj, void *alloc)
 {
 }
 
+#ifdef GUI
 static int16_t glscDebugOut(char ch)
 {
   Serial.write(ch);
@@ -158,6 +164,7 @@ void deinitScreen()
   arena.destroy(guiDriver);
   arena.destroy(guiGui);
 }
+#endif
 
 void initSdCard()
 {
@@ -190,24 +197,30 @@ void setup(void)
 
   initSdCard();
   pixelOpen("stripes.pix");
-  for (uint16_t col = 0; col < 1; ++col) {
-    pixelLoadColumn(col);
-    #if 1
-    FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-    FastLED.setBrightness(1);
-    FastLED.show();
-    #endif
-  }
+  /*
   pixelFile->file.close();
   deinitSdCard();
   arena.reset();
+  */
 
   //initScreen();
 }
 
+uint16_t col = 0;
+
 void loop()
 {
+#ifdef GUI
   gslc_Update(guiGui);
+#endif
+
+  pixelLoadColumn(col);
+#if 1
+  FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.setBrightness(50);
+  FastLED.show();
+#endif
+  col = (col + 1) % pixelFile->columns;
 }
 
 void pixelOpen(const char *filename)
@@ -236,8 +249,16 @@ void pixelLoadColumn(uint16_t col)
   if (file.position() != pos) {
     file.seek(pos);
   }
+  (void)file.read();
 
   uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
+#if 0
+  for (uint16_t i = 0; i < 10; ++i) {
+    Serial.println(rawData[3 * i + 0], HEX);
+    Serial.println(rawData[3 * i + 1], HEX);
+    Serial.println(rawData[3 * i + 2], HEX);
+  }
+#endif
   leds = (CRGB*)rawData;
 }
 
