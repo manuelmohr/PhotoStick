@@ -31,7 +31,7 @@ try:
         pix_file.write(b"\x00" * 1022)
         for col in range(0, im.width):
             for row in range(0, 288):
-                r, g, b = im.getpixel((col, 288 - row)) # flip
+                r, g, b = im.getpixel((col, 288 - row - 1)) # flip
                 pix_file.write(r.to_bytes(1, byteorder='little'))
                 pix_file.write(g.to_bytes(1, byteorder='little'))
                 pix_file.write(b.to_bytes(1, byteorder='little'))
