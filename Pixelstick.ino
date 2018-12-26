@@ -196,7 +196,7 @@ void setup(void)
 #endif
 
   initSdCard();
-  pixelOpen("stripes.pix");
+  pixelOpen("rainbow.pix");
   pixelLoadColumn(0);
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(25);
