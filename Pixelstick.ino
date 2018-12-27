@@ -1,13 +1,10 @@
 #include "SD.h"
 #include "FastLED.h"
 
-#ifdef GUI
 #include "GUIslice.h"
 #include "GUIslice_ex.h"
 #include "GUIslice_drv.h"
-#endif
 
-#include "arena.hpp"
 #include "util.hpp"
 
 // SD card chip select
@@ -31,7 +28,6 @@ struct PixelFile
 
 PixelFile *pixelFile = nullptr;
 
-#ifdef GUI
 #define GUI_MAX_FONTS           2
 #define GUI_MAX_PAGES           1
 #define GUI_MAX_ELEMS_RAM       1
@@ -50,27 +46,7 @@ enum {E_PG_MAIN};
 enum {E_ELEM_BOX,E_ELEM_BTN_QUIT,E_ELEM_COLOR,
       E_SLIDER_R,E_SLIDER_G,E_SLIDER_B,E_ELEM_BTN_ROOM};
 enum {E_FONT_TXT,E_FONT_TITLE};
-#endif
 
-#define ARENA_SIZE (1024 + sizeof(SDClass) + sizeof(PixelFile))
-
-Arena<ARENA_SIZE> arena;
-
-template<size_t SIZE> void *operator new(size_t size, Arena<SIZE>& a)
-{
-  return a.allocate(size);
-}
-
-void *operator new(size_t size, void *ptr)
-{
-  return ptr;
-}
-
-void operator delete(void *obj, void *alloc)
-{
-}
-
-#ifdef GUI
 static int16_t glscDebugOut(char ch)
 {
   Serial.write(ch);
@@ -87,17 +63,11 @@ void initScreen()
   gslc_InitDebug(&glscDebugOut);
 
   Serial.print(F("Initializing touchscreen..."));
-  guiGui      = new (arena) gslc_tsGui();
-  guiDriver   = new (arena) gslc_tsDriver();
-  guiPages    = (gslc_tsPage*)arena.allocate(GUI_MAX_PAGES * sizeof(*guiPages));
-  for (uint8_t i = 0; i < GUI_MAX_PAGES; ++i) {
-    new ((void*)&guiPages[i]) gslc_tsPage();
-  }
-  guiElem     = new (arena) gslc_tsElem();
-  guiElemRefs = (gslc_tsElemRef*)arena.allocate(GUI_MAX_ELEMS_PER_PAGE * sizeof(*guiElemRefs));
-  for (uint8_t i = 0; i < GUI_MAX_ELEMS_PER_PAGE; ++i) {
-    new ((void*)&guiElemRefs[i]) gslc_tsElemRef();
-  }
+  guiGui      = new gslc_tsGui();
+  guiDriver   = new gslc_tsDriver();
+  guiPages    = new gslc_tsPage[GUI_MAX_PAGES];
+  guiElem     = new gslc_tsElem();
+  guiElemRefs = new gslc_tsElemRef[GUI_MAX_ELEMS_PER_PAGE];
 
   if (!gslc_Init(guiGui, guiDriver, guiPages, GUI_MAX_PAGES, guiFonts, GUI_MAX_FONTS)) {
     panic(F("failed1"));
@@ -110,7 +80,7 @@ void initScreen()
     panic(F("failed3"));
   }
 
-  gslc_PageAdd(guiGui,E_PG_MAIN,guiElem,GUI_MAX_ELEMS_RAM,guiElemRefs,GUI_MAX_ELEMS_PER_PAGE);
+  gslc_PageAdd(guiGui, E_PG_MAIN, guiElem, GUI_MAX_ELEMS_RAM, guiElemRefs, GUI_MAX_ELEMS_PER_PAGE);
 
   // Background flat color
   gslc_SetBkgndColor(guiGui,GSLC_COL_GRAY_DK2);
@@ -154,24 +124,17 @@ void deinitScreen()
   gslc_SetBkgndColor(guiGui,GSLC_COL_BLACK);
   gslc_Update(guiGui);
 
-  for (uint8_t i = 0; i < GUI_MAX_ELEMS_PER_PAGE; ++i) {
-    arena.destroy(&guiElemRefs[i]);
-  }
-  arena.destroy(guiElem);
-  for (uint8_t i = 0; i < GUI_MAX_PAGES; ++i) {
-    arena.destroy(&guiPages[i]);
-  }
-  arena.destroy(guiDriver);
-  arena.destroy(guiGui);
+  delete[] guiElemRefs;
+  delete guiElem;
+  delete[] guiPages;
+  delete guiDriver;
+  delete guiGui;
 }
-#endif
 
 void initSdCard()
 {
-  SdVolume::initCacheBuffer(arena.allocate(1024));
-  SD = new (arena) SDClass();
   Serial.print(F("Initializing SD card..."));
-  if (!SD->begin(SD_CS)) {
+  if (!SD.begin(SD_CS)) {
     panic(F("failed!"));
   }
   Serial.println(F("OK!"));
@@ -179,7 +142,6 @@ void initSdCard()
 
 void deinitSdCard()
 {
-  arena.destroy(SD);
 }
 
 void setup(void)
@@ -187,13 +149,8 @@ void setup(void)
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
 
-#if 0
   initScreen();
   gslc_Update(guiGui);
-  delay(10000);
-  deinitScreen();
-  arena.reset();
-#endif
 
   initSdCard();
   pixelOpen("rainbow.pix");
@@ -201,26 +158,15 @@ void setup(void)
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(25);
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
-  /*
-  pixelFile->file.close();
-  deinitSdCard();
-  arena.reset();
-  */
-
-  //initScreen();
 }
 
 uint16_t col = 1;
 
 void loop()
 {
-#ifdef GUI
   gslc_Update(guiGui);
-#endif
 
-#if 1
   FastLED.show();
-#endif
   col = (col + 1) % pixelFile->columns;
   pixelLoadColumn(col);
 }
@@ -231,8 +177,8 @@ void pixelOpen(const char *filename)
   Serial.print(F("Loading pixels "));
   Serial.println(filename);
 
-  pixelFile = new (arena) PixelFile;
-  pixelFile->file = SD->open(filename);
+  pixelFile = new PixelFile;
+  pixelFile->file = SD.open(filename);
   if (!pixelFile->file) {
     panic(F("File not found"));
   }
@@ -253,8 +199,8 @@ void pixelLoadColumn(uint16_t col)
   }
   (void)file.read();
 
-  uint8_t *rawData = (uint8_t*)SdVolume::getRawCacheBuffer();
-  leds = (CRGB*)rawData;
+  // TODO
+  // leds = (CRGB*)rawData;
 }
 
 uint16_t pixelRead16()
