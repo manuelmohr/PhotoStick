@@ -1,5 +1,5 @@
 #include "SD.h"
-#include "FastLED.h"
+//#include "FastLED.h"
 
 #include "GUIslice.h"
 #include "GUIslice_ex.h"
@@ -18,7 +18,7 @@
 // ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
 #define DATA_PIN 2
 
-CRGB *leds = nullptr;
+//CRGB *leds = nullptr;
 
 struct PixelFile
 {
@@ -155,9 +155,9 @@ void setup(void)
   initSdCard();
   pixelOpen("rainbow.pix");
   pixelLoadColumn(0);
-  FastLED.setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(25);
-  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
+//  FastLED.setCorrection(TypicalLEDStrip);
+//  FastLED.setBrightness(25);
+//  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
 }
 
 uint16_t col = 1;
@@ -166,7 +166,7 @@ void loop()
 {
   gslc_Update(guiGui);
 
-  FastLED.show();
+//  FastLED.show();
   col = (col + 1) % pixelFile->columns;
   pixelLoadColumn(col);
 }
