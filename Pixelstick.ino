@@ -2,8 +2,8 @@
 //#include "FastLED.h"
 
 #include "GUIslice.h"
-#include "GUIslice_ex.h"
 #include "GUIslice_drv.h"
+#include "GUIslice_ex.h"
 
 #include "util.hpp"
 
@@ -13,12 +13,13 @@
 // How many leds in your strip?
 #define NUM_LEDS 288
 
-// For led chips like Neopixels, which have a data line, ground, and power, you just
-// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
-// ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
+// For led chips like Neopixels, which have a data line, ground, and power, you
+// just need to define DATA_PIN.  For led chipsets that are SPI based (four
+// wires - data, clock, ground, and power), like the LPD8806 define both
+// DATA_PIN and CLOCK_PIN
 #define DATA_PIN 2
 
-//CRGB *leds = nullptr;
+// CRGB *leds = nullptr;
 
 struct PixelFile
 {
