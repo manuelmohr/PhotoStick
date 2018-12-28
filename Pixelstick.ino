@@ -1,5 +1,5 @@
+#include "FastLED.h"
 #include "SD.h"
-//#include "FastLED.h"
 
 #include "GUIslice.h"
 #include "GUIslice_drv.h"
@@ -19,7 +19,7 @@
 // DATA_PIN and CLOCK_PIN
 #define DATA_PIN 2
 
-// CRGB *leds = nullptr;
+CRGB leds[NUM_LEDS];
 
 struct PixelFile
 {
@@ -29,10 +29,28 @@ struct PixelFile
 
 PixelFile *pixelFile = nullptr;
 
-#define GUI_MAX_FONTS 2
-#define GUI_MAX_PAGES 1
+enum
+{
+  E_PG_MAIN = 0,
+  E_PG_PLAY,
+  E_PG_CREATIVE,
+  GUI_MAX_PAGES,
+};
+
+enum
+{
+  E_ELEM_BOX = 0,
+};
+
+enum
+{
+  E_FONT_TXT = 0,
+  E_FONT_TITLE,
+  GUI_MAX_FONTS,
+};
+
 #define GUI_MAX_ELEMS_RAM 1
-#define GUI_MAX_ELEMS_PER_PAGE 17
+#define GUI_MAX_ELEMS_PER_PAGE 16
 
 gslc_tsGui *    guiGui      = nullptr;
 gslc_tsDriver * guiDriver   = nullptr;
@@ -43,27 +61,7 @@ gslc_tsElemRef *guiElemRefs = nullptr;
 // and other macros, to be put into PROGMEM.
 gslc_tsFont guiFonts[GUI_MAX_FONTS];
 
-enum
-{
-  E_PG_MAIN,
-};
-
-enum
-{
-  E_ELEM_BOX,
-  E_ELEM_BTN_QUIT,
-  E_ELEM_COLOR,
-  E_SLIDER_R,
-  E_SLIDER_G,
-  E_SLIDER_B,
-  E_ELEM_BTN_ROOM
-};
-
-enum
-{
-  E_FONT_TXT,
-  E_FONT_TITLE
-};
+uint8_t guiPageNum = E_PG_MAIN;
 
 static int16_t glscDebugOut(char ch)
 {
@@ -71,9 +69,23 @@ static int16_t glscDebugOut(char ch)
   return 0;
 }
 
-bool CbBtnQuit(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
-               int16_t nY)
+bool GoPlay(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
+            int16_t nY)
 {
+  if (eTouch == GSLC_TOUCH_UP_IN) {
+    Serial.println("Bam");
+    guiPageNum = E_PG_PLAY;
+  }
+  return true;
+}
+
+bool GoCreative(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
+                int16_t nY)
+{
+  if (eTouch == GSLC_TOUCH_UP_IN) {
+    Serial.println("Foo");
+    guiPageNum = E_PG_CREATIVE;
+  }
   return true;
 }
 
@@ -125,6 +137,17 @@ void initScreen()
   gslc_ElemCreateBox_P(guiGui, 200, E_PG_MAIN, 10, 50, 300, 180, GSLC_COL_WHITE,
                        GSLC_COL_BLACK, true, true, NULL, NULL);
 
+  gslc_ElemCreateBtnTxt_P(guiGui, 201, E_PG_MAIN, 20, 120, 100, 50, "Play",
+                          &guiFonts[1], GSLC_COL_WHITE, GSLC_COL_BLACK,
+                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                          GSLC_ALIGN_MID_MID, false, false, &GoPlay, nullptr);
+
+  gslc_ElemCreateBtnTxt_P(guiGui, 202, E_PG_MAIN, 160, 120, 100, 50, "Creative",
+                          &guiFonts[1], GSLC_COL_WHITE, GSLC_COL_BLACK,
+                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                          GSLC_ALIGN_MID_MID, false, false, &GoCreative,
+                          nullptr);
+
   gslc_SetPageCur(guiGui, E_PG_MAIN);
   Serial.println(F("successful"));
 }
@@ -164,15 +187,25 @@ void setup(void)
   while (File entry = root.openNextFile()) {
     Serial.println(entry.name());
   }
+
+  for (uint16_t i = 0; i < NUM_LEDS; ++i) {
+    leds[i] = CRGB(0xFF, 0x00, 0x00);
+  }
+
+  FastLED.setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(25);
+  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
 }
 
 void loop()
 {
+  gslc_SetPageCur(guiGui, guiPageNum);
   gslc_Update(guiGui);
 
+  FastLED.show();
   static uint16_t col = 1;
   col                 = (col + 1) % pixelFile->columns;
-  pixelLoadColumn(col);
+  //  pixelLoadColumn(col);
 }
 
 void pixelOpen(const char *filename)
