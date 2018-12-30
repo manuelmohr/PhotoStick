@@ -54,8 +54,15 @@ enum
 
 enum
 {
-  E_ELEM_BOX = 0,
+  E_ELEM_FILE1 = 203,
+  E_ELEM_FILE2,
+  E_ELEM_FILE3,
+  E_ELEM_FILE4,
+  E_ELEM_FILE5,
+  E_ELEM_MAX_FILES = E_ELEM_FILE5 - E_ELEM_FILE1 + 1,
 };
+
+static char filenames[E_ELEM_MAX_FILES][16];
 
 enum
 {
@@ -112,8 +119,11 @@ bool LoadFile(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
               int16_t nY)
 {
   if (eTouch == GSLC_TOUCH_UP_IN) {
-    Serial.println("Load");
-    bmpOpen("strip32.bmp");
+    const int   id       = gslc_ElemGetId(pvGui, pvElemRef) - E_ELEM_FILE1;
+    const char *filename = filenames[id];
+    Serial.print("Load ");
+    Serial.println(filename);
+    bmpOpen(filename);
     return true;
   }
   return false;
@@ -206,13 +216,17 @@ void initScreen()
   while (File entry = root.openNextFile()) {
     const char *n = entry.name();
     if (endsWith(n, ".BMP")) {
-      static const char txt[8][32];
       Serial.println(entry.name());
-      strcpy(txt[count], entry.name());
-      gslc_ElemCreateBtnTxt(guiGui, 203 + count, E_PG_PLAY,
+      strcpy(filenames[count], entry.name());
+      gslc_ElemCreateBtnTxt(guiGui, E_ELEM_FILE1 + count, E_PG_PLAY,
                             (gslc_tsRect){ 30, 70 + count * 30, 80, 20 },
-                            txt[count], 32, E_FONT_TXT, &LoadFile);
+                            filenames[count], sizeof(filenames[count]),
+                            E_FONT_TXT, &LoadFile);
       ++count;
+    }
+
+    if (count == E_ELEM_MAX_FILES) {
+      break;
     }
   }
   root.close();
@@ -275,7 +289,6 @@ void loop()
     bmpLoadRow(row);
     row = (row + 1) % bmpFile.height;
     FastLED.show();
-    delay(100);
   }
 }
 
