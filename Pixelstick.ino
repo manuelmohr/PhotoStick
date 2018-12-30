@@ -7,11 +7,15 @@
 
 #include "util.hpp"
 
+#include <string.h>
+
 // SD card chip select
 #define SD_CS 4
 
 // How many leds in your strip?
 #define NUM_LEDS 288
+
+#define BMP_WIDTH NUM_LEDS
 
 // For led chips like Neopixels, which have a data line, ground, and power, you
 // just need to define DATA_PIN.  For led chipsets that are SPI based (four
@@ -28,6 +32,17 @@ struct PixelFile
 };
 
 PixelFile *pixelFile = nullptr;
+
+struct BMPFile
+{
+  File     file;
+  boolean  flip;
+  uint8_t  depth;
+  uint32_t height;
+  uint32_t imageOffset;
+};
+
+BMPFile bmpFile;
 
 enum
 {
@@ -49,14 +64,16 @@ enum
   GUI_MAX_FONTS,
 };
 
-#define GUI_MAX_ELEMS_RAM 1
-#define GUI_MAX_ELEMS_PER_PAGE 16
+#define GUI_MAX_ELEMS_RAM 8
+#define GUI_MAX_ELEMS_PER_PAGE 32
 
-gslc_tsGui *    guiGui      = nullptr;
-gslc_tsDriver * guiDriver   = nullptr;
-gslc_tsPage *   guiPages    = nullptr;
-gslc_tsElem *   guiElem     = nullptr;
-gslc_tsElemRef *guiElemRefs = nullptr;
+gslc_tsGui *    guiGui       = nullptr;
+gslc_tsDriver * guiDriver    = nullptr;
+gslc_tsPage *   guiPages     = nullptr;
+gslc_tsElem *   guiElem      = nullptr;
+gslc_tsElemRef *guiElemRefs  = nullptr;
+gslc_tsElem *   guiElem2     = nullptr;
+gslc_tsElemRef *guiElemRefs2 = nullptr;
 // Must be link-time constant as it is referenced by gslc_ElemCreateTxt_P
 // and other macros, to be put into PROGMEM.
 gslc_tsFont guiFonts[GUI_MAX_FONTS];
@@ -75,8 +92,9 @@ bool GoPlay(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
   if (eTouch == GSLC_TOUCH_UP_IN) {
     Serial.println("Bam");
     guiPageNum = E_PG_PLAY;
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool GoCreative(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
@@ -85,8 +103,33 @@ bool GoCreative(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
   if (eTouch == GSLC_TOUCH_UP_IN) {
     Serial.println("Foo");
     guiPageNum = E_PG_CREATIVE;
+    return true;
   }
-  return true;
+  return false;
+}
+
+bool LoadFile(void *pvGui, void *pvElemRef, gslc_teTouch eTouch, int16_t nX,
+              int16_t nY)
+{
+  if (eTouch == GSLC_TOUCH_UP_IN) {
+    Serial.println("Load");
+    bmpOpen("strip32.bmp");
+    return true;
+  }
+  return false;
+}
+
+bool endsWith(const char *str, const char *e)
+{
+  const size_t strLen = strlen(str);
+  const size_t eLen   = strlen(e);
+
+  if (strLen < eLen) {
+    return false;
+  }
+
+  const size_t off = strLen - eLen;
+  return strcmp(str + off, e) == 0;
 }
 
 void initScreen()
@@ -94,11 +137,13 @@ void initScreen()
   gslc_InitDebug(&glscDebugOut);
 
   Serial.print(F("Initializing touchscreen..."));
-  guiGui      = new gslc_tsGui();
-  guiDriver   = new gslc_tsDriver();
-  guiPages    = new gslc_tsPage[GUI_MAX_PAGES];
-  guiElem     = new gslc_tsElem();
-  guiElemRefs = new gslc_tsElemRef[GUI_MAX_ELEMS_PER_PAGE];
+  guiGui       = new gslc_tsGui();
+  guiDriver    = new gslc_tsDriver();
+  guiPages     = new gslc_tsPage[GUI_MAX_PAGES];
+  guiElem      = new gslc_tsElem[GUI_MAX_ELEMS_RAM];
+  guiElem2     = new gslc_tsElem[GUI_MAX_ELEMS_RAM];
+  guiElemRefs  = new gslc_tsElemRef[GUI_MAX_ELEMS_PER_PAGE];
+  guiElemRefs2 = new gslc_tsElemRef[GUI_MAX_ELEMS_PER_PAGE];
 
   if (!gslc_Init(guiGui, guiDriver, guiPages, GUI_MAX_PAGES, guiFonts,
                  GUI_MAX_FONTS)) {
@@ -114,6 +159,8 @@ void initScreen()
 
   gslc_PageAdd(guiGui, E_PG_MAIN, guiElem, GUI_MAX_ELEMS_RAM, guiElemRefs,
                GUI_MAX_ELEMS_PER_PAGE);
+  gslc_PageAdd(guiGui, E_PG_PLAY, guiElem2, GUI_MAX_ELEMS_RAM, guiElemRefs2,
+               GUI_MAX_ELEMS_PER_PAGE);
 
   // Background flat color
   gslc_SetBkgndColor(guiGui, GSLC_COL_GRAY_DK2);
@@ -126,27 +173,49 @@ void initScreen()
   }
 #define TMP_COL2 (gslc_tsColor){ 128, 128, 240 }
   // Note: must use title Font ID
-  gslc_ElemCreateTxt_P(guiGui, 98, E_PG_MAIN, 2, 2, 320, 50, "Pixelstick",
+  gslc_ElemCreateTxt_P(guiGui, 100, E_PG_MAIN, 2, 2, 320, 50, "Pixelstick",
                        &guiFonts[1], TMP_COL1, GSLC_COL_BLACK, GSLC_COL_BLACK,
                        GSLC_ALIGN_MID_MID, false, false);
-  gslc_ElemCreateTxt_P(guiGui, 99, E_PG_MAIN, 0, 0, 320, 50, "Pixelstick",
+  gslc_ElemCreateTxt_P(guiGui, 101, E_PG_MAIN, 0, 0, 320, 50, "Pixelstick",
                        &guiFonts[1], TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
                        GSLC_ALIGN_MID_MID, false, false);
-
   // Create background box
-  gslc_ElemCreateBox_P(guiGui, 200, E_PG_MAIN, 10, 50, 300, 180, GSLC_COL_WHITE,
+  gslc_ElemCreateBox_P(guiGui, 102, E_PG_MAIN, 10, 50, 300, 180, GSLC_COL_WHITE,
                        GSLC_COL_BLACK, true, true, NULL, NULL);
-
-  gslc_ElemCreateBtnTxt_P(guiGui, 201, E_PG_MAIN, 20, 120, 100, 50, "Play",
+  gslc_ElemCreateBtnTxt_P(guiGui, 103, E_PG_MAIN, 20, 120, 100, 50, "Play",
                           &guiFonts[1], GSLC_COL_WHITE, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_ALIGN_MID_MID, false, false, &GoPlay, nullptr);
-
-  gslc_ElemCreateBtnTxt_P(guiGui, 202, E_PG_MAIN, 160, 120, 100, 50, "Creative",
+  gslc_ElemCreateBtnTxt_P(guiGui, 104, E_PG_MAIN, 160, 120, 100, 50, "Creative",
                           &guiFonts[1], GSLC_COL_WHITE, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_ALIGN_MID_MID, false, false, &GoCreative,
                           nullptr);
+
+  gslc_ElemCreateBox_P(guiGui, 200, E_PG_PLAY, 10, 50, 300, 180, GSLC_COL_WHITE,
+                       GSLC_COL_BLACK, true, true, NULL, NULL);
+  gslc_ElemCreateTxt_P(guiGui, 201, E_PG_PLAY, 2, 2, 320, 50, "Play",
+                       &guiFonts[1], TMP_COL1, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                       GSLC_ALIGN_MID_MID, false, false);
+  gslc_ElemCreateTxt_P(guiGui, 202, E_PG_PLAY, 0, 0, 320, 50, "Play",
+                       &guiFonts[1], TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                       GSLC_ALIGN_MID_MID, false, false);
+
+  uint8_t count = 0;
+  File    root  = SD.open("/");
+  while (File entry = root.openNextFile()) {
+    const char *n = entry.name();
+    if (endsWith(n, ".BMP")) {
+      static const char txt[8][32];
+      Serial.println(entry.name());
+      strcpy(txt[count], entry.name());
+      gslc_ElemCreateBtnTxt(guiGui, 203 + count, E_PG_PLAY,
+                            (gslc_tsRect){ 30, 70 + count * 30, 80, 20 },
+                            txt[count], 32, E_FONT_TXT, &LoadFile);
+      ++count;
+    }
+  }
+  root.close();
 
   gslc_SetPageCur(guiGui, E_PG_MAIN);
   Serial.println(F("successful"));
@@ -158,7 +227,7 @@ void deinitScreen()
   gslc_Update(guiGui);
 
   delete[] guiElemRefs;
-  delete guiElem;
+  delete[] guiElem;
   delete[] guiPages;
   delete guiDriver;
   delete guiGui;
@@ -178,19 +247,16 @@ void setup(void)
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
 
-  initScreen();
-  gslc_Update(guiGui);
-
   initSdCard();
 
   File root = SD.open("/");
   while (File entry = root.openNextFile()) {
     Serial.println(entry.name());
   }
+  root.close();
 
-  for (uint16_t i = 0; i < NUM_LEDS; ++i) {
-    leds[i] = CRGB(0xFF, 0x00, 0x00);
-  }
+  initScreen();
+  gslc_Update(guiGui);
 
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(25);
@@ -199,13 +265,176 @@ void setup(void)
 
 void loop()
 {
-  gslc_SetPageCur(guiGui, guiPageNum);
+  if (gslc_GetPageCur(guiGui) != guiPageNum) {
+    gslc_SetPageCur(guiGui, guiPageNum);
+  }
   gslc_Update(guiGui);
 
-  FastLED.show();
-  static uint16_t col = 1;
-  col                 = (col + 1) % pixelFile->columns;
-  //  pixelLoadColumn(col);
+  if (bmpFile.height != 0) {
+    static uint32_t row = 0;
+    bmpLoadRow(row);
+    row = (row + 1) % bmpFile.height;
+    FastLED.show();
+    delay(100);
+  }
+}
+
+void bmpOpen(const char *filename)
+{
+  Serial.println();
+  Serial.print(F("Loading image "));
+  Serial.println(filename);
+
+  bmpFile.file = SD.open(filename);
+  if (!bmpFile.file) {
+    panic(F("File not found"));
+  }
+
+  // Parse BMP header
+  if (bmpRead16() != 0x4D42) {
+    panic(F("Invalid header"));
+  }
+  Serial.print(F("File size: "));
+  Serial.println(bmpRead32());
+  (void)bmpRead32(); // Ignore reserved word
+  bmpFile.imageOffset = bmpRead32();
+  Serial.print(F("Image Offset: "));
+  Serial.println(bmpFile.imageOffset, DEC);
+
+  // Read BMP Info header
+  Serial.print(F("Header size: "));
+  Serial.println(bmpRead32());
+
+  if (bmpRead32() != BMP_WIDTH) {
+    panic(F("Width must be 288"));
+  }
+
+  uint32_t height = bmpRead32();
+  boolean  flip   = true;
+  if (height < 0) {
+    height = -height;
+    flip   = false;
+  }
+  bmpFile.height = height;
+  bmpFile.flip   = flip;
+
+  if (bmpRead16() != 1) {
+    panic(F("Planes must be 1"));
+  }
+  bmpFile.depth = bmpRead16();
+  if (bmpFile.depth != 16 && bmpFile.depth != 24 && bmpFile.depth != 32) {
+    panic(F("Depth must be 16, 24, or 32"));
+  }
+  const uint32_t comp = bmpRead32();
+  if (comp != 0 && comp != 3) {
+    panic(F("Must be uncompressed"));
+  }
+
+  // BMP rows are padded (if needed) to 4-byte boundary
+  const uint32_t rowSize = (BMP_WIDTH * bmpFile.depth / 8 + 3U) & ~3U;
+
+  // If bmpHeight is negative, image is in top-down order.
+  // This is not canon but has been observed in the wild.
+  Serial.print(F("Image size: 288"));
+  Serial.print('x');
+  Serial.println(bmpFile.height);
+  Serial.print(F("Row size: "));
+  Serial.println(rowSize);
+}
+
+void bmpLoadRow(uint32_t row)
+{
+  const uint32_t rowSize = (BMP_WIDTH * bmpFile.depth / 8 + 3U) & ~3U;
+
+  uint32_t pos;
+  if (bmpFile.flip) { // Normal case
+    pos = bmpFile.imageOffset + (bmpFile.height - 1 - row) * rowSize;
+  } else {
+    pos = bmpFile.imageOffset + row * rowSize;
+  }
+
+  File &file = bmpFile.file;
+  if (file.position() != pos) {
+    file.seek(pos);
+  }
+
+#if 0
+  Serial.print("pos: ");
+  Serial.println(pos, DEC);
+#endif
+  for (int16_t i = 0; i < NUM_LEDS; ++i) {
+    uint8_t r, g, b;
+
+    if (bmpFile.depth == 16) {
+      uint32_t c = bmpRead16();
+
+      r = (c & 0x7C00U) >> 10;
+      g = (c & 0x03E0U) >> 5;
+      b = (c & 0x001FU) >> 0;
+
+      r = (float(r) / ((1U << 5) - 1)) * 255.0f;
+      g = (float(g) / ((1U << 6) - 1)) * 255.0f;
+      b = (float(b) / ((1U << 5) - 1)) * 255.0f;
+    } else if (bmpFile.depth == 24) {
+      uint32_t c = bmpRead24();
+
+      r = (c & 0xFF0000U) >> 16;
+      g = (c & 0x00FF00U) >> 8;
+      b = (c & 0x0000FFU) >> 0;
+    } else {
+      uint32_t c = bmpRead32();
+
+      r = (c & 0xFF000000U) >> 24;
+      g = (c & 0x00FF0000U) >> 16;
+      b = (c & 0x0000FF00U) >> 8;
+    }
+
+    leds[i] = CRGB(r, g, b);
+
+#if 0
+    Serial.print(i, DEC);
+    Serial.print(": r=");
+    Serial.print(leds[i].r, HEX);
+    Serial.print(" g=");
+    Serial.print(leds[i].g, HEX);
+    Serial.print(" b=");
+    Serial.print(leds[i].b, HEX);
+    Serial.println("");
+#endif
+  }
+}
+
+// These read 16- and 32-bit types from the SD card file.
+// BMP data is stored little-endian, Arduino is little-endian too.
+uint16_t bmpRead16()
+{
+  File &   f = bmpFile.file;
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
+}
+
+uint32_t bmpRead24()
+{
+  File &   f = bmpFile.file;
+  uint32_t result;
+  ((uint8_t *)&result)[0] = 0; // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
+}
+
+uint32_t bmpRead32()
+{
+  File &   f = bmpFile.file;
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
 }
 
 void pixelOpen(const char *filename)
