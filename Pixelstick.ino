@@ -25,14 +25,6 @@
 
 CRGB leds[NUM_LEDS];
 
-struct PixelFile
-{
-  File     file;
-  uint16_t columns;
-};
-
-PixelFile *pixelFile = nullptr;
-
 struct BMPFile
 {
   File     file;
@@ -447,47 +439,6 @@ uint32_t bmpRead32()
   ((uint8_t *)&result)[1] = f.read();
   ((uint8_t *)&result)[2] = f.read();
   ((uint8_t *)&result)[3] = f.read(); // MSB
-  return result;
-}
-
-void pixelOpen(const char *filename)
-{
-  Serial.println();
-  Serial.print(F("Loading pixels "));
-  Serial.println(filename);
-
-  pixelFile       = new PixelFile;
-  pixelFile->file = SD.open(filename);
-  if (!pixelFile->file) {
-    panic(F("File not found"));
-  }
-
-  const uint16_t columns = pixelRead16();
-  Serial.print(F("Columns: "));
-  Serial.println(columns);
-  pixelFile->columns = columns;
-}
-
-void pixelLoadColumn(uint16_t col)
-{
-  const uint32_t pos = (col + 1) * 1024;
-
-  File &file = pixelFile->file;
-  if (file.position() != pos) {
-    file.seek(pos);
-  }
-  (void)file.read();
-
-  // TODO
-  // leds = (CRGB*)rawData;
-}
-
-uint16_t pixelRead16()
-{
-  File &   f = pixelFile->file;
-  uint16_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read(); // MSB
   return result;
 }
 
