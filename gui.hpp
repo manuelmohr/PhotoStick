@@ -69,6 +69,8 @@ gslc_tsElemRef elemRefs[Elem::MAX_ELEMS];
 gslc_tsFont    fonts[Font::MAX_FONTS];
 char           filenames[12][16];
 
+const char *fileToLoad = nullptr;
+
 Page currentPage = Page::MAIN;
 
 int16_t glscDebugOut(char ch)
@@ -112,9 +114,8 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
     case Elem::PLAY1_BUTTON_FILE10:
     case Elem::PLAY1_BUTTON_FILE11:
     case Elem::PLAY1_BUTTON_FILE12: {
-      const int   fileId   = id - Elem::PLAY1_BUTTON_FILE1;
-      const char *filename = filenames[fileId];
-      // bmpOpen(filename);
+      const int fileId = id - Elem::PLAY1_BUTTON_FILE1;
+      fileToLoad       = filenames[fileId];
       break;
     }
     }

@@ -37,6 +37,11 @@ void loop()
 {
   Gui::update();
 
+  if (Gui::fileToLoad != nullptr) {
+    bmpOpen(bmpFile, Gui::fileToLoad);
+    Gui::fileToLoad = nullptr;
+  }
+
   if (bmpFile.height != 0) {
     static uint32_t row = 0;
     bmpLoadRow(bmpFile, row, &leds[0]);
@@ -44,4 +49,5 @@ void loop()
     FastLED.show();
   }
 }
+
 // vim: et ts=2
