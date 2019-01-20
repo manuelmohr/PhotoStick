@@ -70,12 +70,8 @@ extern char           filenames[12][16];
 extern const char *   fileToLoad;
 extern Page           currentPage;
 
-int16_t glscDebugOut(char ch);
-bool    buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
-                      int16_t y);
-bool    endsWith(const char *str, const char *e);
-void    init();
-void    update();
+void init();
+void update();
 }
 
 #endif

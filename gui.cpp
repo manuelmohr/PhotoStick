@@ -17,14 +17,16 @@ Gui::Page      Gui::currentPage = Page::MAIN;
 
 using namespace Gui;
 
-int16_t Gui::glscDebugOut(char ch)
+namespace
+{
+int16_t glscDebugOut(char ch)
 {
   Serial.write(ch);
   return 0;
 }
 
-bool Gui::buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
-                        int16_t y)
+bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
+                   int16_t y)
 {
   if (event != GSLC_TOUCH_UP_IN) {
     return true;
@@ -69,7 +71,7 @@ bool Gui::buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
   return true;
 }
 
-bool Gui::endsWith(const char *str, const char *e)
+bool endsWith(const char *str, const char *e)
 {
   const size_t strLen = strlen(str);
   const size_t eLen   = strlen(e);
@@ -80,6 +82,7 @@ bool Gui::endsWith(const char *str, const char *e)
 
   const size_t off = strLen - eLen;
   return strcmp(str + off, e) == 0;
+}
 }
 
 void Gui::init()
