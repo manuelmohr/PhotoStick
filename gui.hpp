@@ -5,16 +5,16 @@
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
 
-#define GUI_MAX_ELEMS_RAM 16
-#define GUI_MAX_ELEMS_PER_PAGE 16
-
 namespace Gui
 {
 enum Page
 {
   MAIN = 0,
   PLAY1,
+  PLAY2,
+  PLAY3,
   CREATIVE1,
+  CREATIVE2,
   MAX_PAGES,
 };
 
@@ -26,6 +26,7 @@ enum Elem
   MAIN_TITLE2,
   MAIN_BUTTON_PLAY,
   MAIN_BUTTON_CREATIVE,
+  MAIN_END = MAIN_BUTTON_CREATIVE,
   PLAY1_START,
   PLAY1_BOX = PLAY1_START,
   PLAY1_TITLE1,
@@ -44,12 +45,21 @@ enum Elem
   PLAY1_BUTTON_FILE10,
   PLAY1_BUTTON_FILE11,
   PLAY1_BUTTON_FILE12,
+  PLAY1_END = PLAY1_BUTTON_FILE12,
   PLAY2_START,
   PLAY2_BOX = PLAY2_START,
-  PLAY2_TITLE,
+  PLAY2_TITLE1,
+  PLAY2_TITLE2,
   PLAY2_BUTTON_BACK,
+  PLAY2_BUTTON_GO,
+  PLAY2_END = PLAY2_BUTTON_GO,
   PLAY3_START,
   PLAY3_BLACK = PLAY3_START,
+  PLAY3_END   = PLAY3_BLACK,
+  CREATIVE1_START,
+  CREATIVE1_END = CREATIVE1_START,
+  CREATIVE2_START,
+  CREATIVE2_END = CREATIVE2_START,
   MAX_ELEMS,
 };
 
@@ -60,15 +70,7 @@ enum Font
   MAX_FONTS,
 };
 
-extern gslc_tsGui     gui;
-extern gslc_tsDriver  driver;
-extern gslc_tsPage    pages[Page::MAX_PAGES];
-extern gslc_tsElem    elems[Elem::MAX_ELEMS];
-extern gslc_tsElemRef elemRefs[Elem::MAX_ELEMS];
-extern gslc_tsFont    fonts[Font::MAX_FONTS];
-extern char           filenames[12][16];
-extern const char *   fileToLoad;
-extern Page           currentPage;
+extern const char *fileToLoad;
 
 void init();
 void update();
