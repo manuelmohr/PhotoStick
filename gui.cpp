@@ -1,5 +1,4 @@
 #include "gui.hpp"
-#include "GUIslice.h"
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
 #include "bmp.hpp"
@@ -17,6 +16,9 @@ gslc_tsPage    pages[Gui::Page::MAX_PAGES];
 gslc_tsElem    elems[Gui::Elem::MAX_ELEMS];
 gslc_tsElemRef elemRefs[Gui::Elem::MAX_ELEMS];
 gslc_tsFont    fonts[Gui::Font::MAX_FONTS];
+gslc_tsXSlider sliderR;
+gslc_tsXSlider sliderG;
+gslc_tsXSlider sliderB;
 Gui::Page      currentPage = Page::MAIN;
 char           filenames[12][16];
 int            selectedFile = -1;
@@ -120,6 +122,39 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
   return true;
 }
 
+bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
+{
+  gslc_tsGui *    gui     = (gslc_tsGui *)(pvGui);
+  gslc_tsElemRef *elemRef = (gslc_tsElemRef *)(pvElemRef);
+  gslc_tsElem *   elem    = elemRef->pElem;
+  gslc_tsXSlider *slider  = (gslc_tsXSlider *)(elem->pXData);
+
+  static int16_t posSliderR = 255;
+  static int16_t posSliderG = 255;
+  static int16_t posSliderB = 255;
+
+  // Fetch the new RGB component from the slider
+  switch (elem->nId) {
+  case Elem::CREATIVE1_SLIDER_R:
+    posSliderR = nPos;
+    break;
+  case Elem::CREATIVE1_SLIDER_G:
+    posSliderG = nPos;
+    break;
+  case Elem::CREATIVE1_SLIDER_B:
+    posSliderB = nPos;
+    break;
+  default:
+    break;
+  }
+
+  gslc_tsColor    col      = { posSliderR, posSliderG, posSliderB };
+  gslc_tsElemRef *colorbox = &elemRefs[CREATIVE1_COLORBOX];
+  gslc_ElemSetCol(gui, colorbox, GSLC_COL_WHITE, col, col);
+
+  return true;
+}
+
 bool endsWith(const char *str, const char *e)
 {
   const size_t strLen = strlen(str);
@@ -132,7 +167,7 @@ bool endsWith(const char *str, const char *e)
   const size_t off = strLen - eLen;
   return strcmp(str + off, e) == 0;
 }
-}
+} // end anonymous namespace
 
 void Gui::init()
 {
@@ -287,8 +322,82 @@ void Gui::init()
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
 
+  /*
+   * CREATIVE1 PAGE
+   */
+  {
+    uint16_t nSlideW = 110;
+    uint16_t nSlideH = 20;
+
+    gslc_ElemCreateBox_P(&gui, CREATIVE1_BOX, Page::CREATIVE1, 10, 50, 300, 180,
+                         GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL,
+                         NULL);
+    gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE1, Page::CREATIVE1, 2, 2, 320, 50,
+                         "Konfig", &fonts[Font::TITLE], TMP_COL1,
+                         GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                         false, false);
+    gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE2, Page::CREATIVE1, 0, 0, 320, 50,
+                         "Konfig", &fonts[Font::TITLE], TMP_COL2,
+                         GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                         false, false);
+    gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_BACK, Page::CREATIVE1, 20,
+                            20, 50, 30, "Zurueck", &fonts[Font::TEXT],
+                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                            GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                            false, false, &buttonClicked, nullptr);
+    gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_GO, Page::CREATIVE1, 150,
+                            200, 50, 30, "START", &fonts[Font::TEXT],
+                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                            GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                            false, false, &buttonClicked, nullptr);
+    /* FIXME: Move to PROGMEM. */
+    {
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CREATIVE1_SLIDER_R, Page::CREATIVE1, &sliderR,
+        (gslc_tsRect){ 20, 70, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_RED, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_RED_DK4, 10, 5,
+                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
+    }
+    {
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CREATIVE1_SLIDER_G, Page::CREATIVE1, &sliderG,
+        (gslc_tsRect){ 20, 130, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_GREEN, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_GREEN_DK4, 10, 5,
+                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
+    }
+    {
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CREATIVE1_SLIDER_B, Page::CREATIVE1, &sliderB,
+        (gslc_tsRect){ 20, 190, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_BLUE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_BLUE_DK4, 10, 5,
+                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
+    }
+    {
+      gslc_tsElemRef *colorbox =
+        gslc_ElemCreateBox(&gui, CREATIVE1_COLORBOX, Page::CREATIVE1,
+                           (gslc_tsRect){ 140, 70, 20, 130 });
+      gslc_ElemSetCol(&gui, colorbox, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                      GSLC_COL_WHITE);
+    }
+  }
+
   gslc_SetPageCur(&gui, Page::MAIN);
   Serial.println(F("successful"));
+
+  for (size_t i = 0; i < Gui::Elem::MAX_ELEMS; ++i) {
+    Serial.print(i);
+    Serial.print(":  ");
+    Serial.println((unsigned)(void *)elemRefs[i].pElem, HEX);
+  }
 }
 
 void Gui::update()
