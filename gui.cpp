@@ -338,8 +338,8 @@ void Gui::init()
    * CREATIVE1 PAGE
    */
   {
-    uint16_t nSlideW = 110;
-    uint16_t nSlideH = 20;
+    const uint16_t slideWidth  = 110;
+    const uint16_t slideHeight = 30;
 
     gslc_ElemCreateBox_P(&gui, CREATIVE1_BOX, Page::CREATIVE1, 10, 50, 300, 180,
                          GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL,
@@ -363,34 +363,40 @@ void Gui::init()
                             GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                             false, false, &buttonClicked, nullptr);
     /* FIXME: Move to PROGMEM. */
+    const uint16_t numTicks         = 0;
+    const uint16_t tickLen          = 0;
+    const uint16_t thumbControlSize = 14;
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_R, Page::CREATIVE1, &sliderR,
-        (gslc_tsRect){ 20, 70, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+        (gslc_tsRect){ 20, 70, slideWidth, slideHeight }, 0, 255, 255,
+        thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_RED, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
-      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_RED_DK4, 10, 5,
-                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_RED_DK4, numTicks,
+                               tickLen, GSLC_COL_GRAY_DK2);
       gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
     }
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_G, Page::CREATIVE1, &sliderG,
-        (gslc_tsRect){ 20, 130, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+        (gslc_tsRect){ 20, 130, slideWidth, slideHeight }, 0, 255, 255,
+        thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_GREEN, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
-      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_GREEN_DK4, 10, 5,
-                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_GREEN_DK4, numTicks,
+                               tickLen, GSLC_COL_GRAY_DK2);
       gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
     }
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_B, Page::CREATIVE1, &sliderB,
-        (gslc_tsRect){ 20, 190, nSlideW, nSlideH }, 0, 255, 255, 10, false);
+        (gslc_tsRect){ 20, 190, slideWidth, slideHeight }, 0, 255, 255,
+        thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_BLUE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
-      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_BLUE_DK4, 10, 5,
-                               GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_BLUE_DK4, numTicks,
+                               tickLen, GSLC_COL_GRAY_DK2);
       gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
     }
     {
