@@ -117,9 +117,21 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
       break;
     }
     break;
+
+  case Page::CREATIVE1:
+    switch (id) {
+    case Elem::CREATIVE1_BUTTON_BACK:
+      currentPage = Page::MAIN;
+      break;
+
+    case Elem::CREATIVE1_BUTTON_GO:
+      currentPage = Page::MAIN; // TODO
+      break;
+    }
+    break;
   }
 
-  return true;
+  return false;
 }
 
 bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
