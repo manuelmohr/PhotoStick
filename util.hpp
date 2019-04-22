@@ -20,3 +20,5 @@
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
 #endif
+
+// vim: et ts=2
