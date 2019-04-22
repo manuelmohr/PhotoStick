@@ -10,18 +10,21 @@ const char *Gui::fileToLoad = nullptr;
 
 namespace
 {
-gslc_tsGui     gui;
-gslc_tsDriver  driver;
-gslc_tsPage    pages[Gui::Page::MAX_PAGES];
-gslc_tsElem    elems[Gui::Elem::MAX_ELEMS];
-gslc_tsElemRef elemRefs[Gui::Elem::MAX_ELEMS];
-gslc_tsFont    fonts[Gui::Font::MAX_FONTS];
-gslc_tsXSlider sliderR;
-gslc_tsXSlider sliderG;
-gslc_tsXSlider sliderB;
-Gui::Page      currentPage = Page::MAIN;
-char           filenames[12][16];
-int            selectedFile = -1;
+gslc_tsGui       gui;
+gslc_tsDriver    driver;
+gslc_tsPage      pages[Gui::Page::MAX_PAGES];
+gslc_tsElem      elems[Gui::Elem::MAX_ELEMS];
+gslc_tsElemRef   elemRefs[Gui::Elem::MAX_ELEMS];
+gslc_tsFont      fonts[Gui::Font::MAX_FONTS];
+gslc_tsXSlider   sliderR;
+gslc_tsXSlider   sliderG;
+gslc_tsXSlider   sliderB;
+gslc_tsXSlider   sliderTime;
+gslc_tsXCheckbox checkboxLight;
+gslc_tsXCheckbox checkboxBlink;
+Gui::Page        currentPage = Page::MAIN;
+char             filenames[12][16];
+int              selectedFile = -1;
 
 int16_t glscDebugOut(char ch)
 {
@@ -131,7 +134,7 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
     break;
   }
 
-  return false;
+  return true;
 }
 
 bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
@@ -357,15 +360,16 @@ void Gui::init()
                             GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                             GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                             false, false, &buttonClicked, nullptr);
-    gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_GO, Page::CREATIVE1, 150,
+    gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_GO, Page::CREATIVE1, 200,
                             200, 50, 30, "START", &fonts[Font::TEXT],
                             GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                             GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                             false, false, &buttonClicked, nullptr);
+
     /* FIXME: Move to PROGMEM. */
     const uint16_t numTicks         = 0;
     const uint16_t tickLen          = 0;
-    const uint16_t thumbControlSize = 14;
+    const uint16_t thumbControlSize = 12;
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_R, Page::CREATIVE1, &sliderR,
@@ -380,7 +384,7 @@ void Gui::init()
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_G, Page::CREATIVE1, &sliderG,
-        (gslc_tsRect){ 20, 130, slideWidth, slideHeight }, 0, 255, 255,
+        (gslc_tsRect){ 20, 110, slideWidth, slideHeight }, 0, 255, 255,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_GREEN, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -391,7 +395,7 @@ void Gui::init()
     {
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CREATIVE1_SLIDER_B, Page::CREATIVE1, &sliderB,
-        (gslc_tsRect){ 20, 190, slideWidth, slideHeight }, 0, 255, 255,
+        (gslc_tsRect){ 20, 150, slideWidth, slideHeight }, 0, 255, 255,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_BLUE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -400,22 +404,53 @@ void Gui::init()
       gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
     }
     {
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CREATIVE1_SLIDER_TIME, Page::CREATIVE1, &sliderTime,
+        (gslc_tsRect){ 20, 190, slideWidth, slideHeight }, 1, 10, 2,
+        thumbControlSize, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, numTicks,
+                               tickLen, GSLC_COL_GRAY_DK2);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
+    }
+    {
       gslc_tsElemRef *colorbox =
         gslc_ElemCreateBox(&gui, CREATIVE1_COLORBOX, Page::CREATIVE1,
-                           (gslc_tsRect){ 140, 70, 20, 130 });
+                           (gslc_tsRect){ 140, 70, 20, 140 });
       gslc_ElemSetCol(&gui, colorbox, GSLC_COL_WHITE, GSLC_COL_WHITE,
                       GSLC_COL_WHITE);
+    }
+    {
+      gslc_tsElemRef *checkbox = gslc_ElemXCheckboxCreate(
+        &gui, CREATIVE1_PATTERN_LIGHT_BOX, Page::CREATIVE1, &checkboxLight,
+        (gslc_tsRect){ 180, 70, 15, 15 }, true, GSLCX_CHECKBOX_STYLE_ROUND,
+        TMP_COL2, true);
+      gslc_ElemSetCol(&gui, checkbox, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                      GSLC_COL_WHITE);
+      gslc_ElemSetGroup(&gui, checkbox, 1);
+      gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_LIGHT_LABEL, Page::CREATIVE1,
+                           200, 70, 50, 20, "Leuchten", &fonts[Font::TEXT],
+                           TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
+    }
+    {
+      gslc_tsElemRef *checkbox = gslc_ElemXCheckboxCreate(
+        &gui, CREATIVE1_PATTERN_BLINK_BOX, Page::CREATIVE1, &checkboxBlink,
+        (gslc_tsRect){ 180, 100, 15, 15 }, true, GSLCX_CHECKBOX_STYLE_ROUND,
+        TMP_COL2, false);
+      gslc_ElemSetCol(&gui, checkbox, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                      GSLC_COL_WHITE);
+      gslc_ElemSetGroup(&gui, checkbox, 1);
+      gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_BLINK_LABEL, Page::CREATIVE1,
+                           200, 100, 50, 20, "Blinken", &fonts[Font::TEXT],
+                           TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
     }
   }
 
   gslc_SetPageCur(&gui, Page::MAIN);
   Serial.println(F("successful"));
-
-  for (size_t i = 0; i < Gui::Elem::MAX_ELEMS; ++i) {
-    Serial.print(i);
-    Serial.print(":  ");
-    Serial.println((unsigned)(void *)elemRefs[i].pElem, HEX);
-  }
 }
 
 void Gui::update()
@@ -423,6 +458,7 @@ void Gui::update()
   if (gslc_GetPageCur(&gui) != currentPage) {
     gslc_SetPageCur(&gui, currentPage);
   }
+
   gslc_Update(&gui);
 }
 
