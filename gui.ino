@@ -56,6 +56,8 @@ enum Elem
   CREATIVE1_PATTERN_LIGHT_LABEL,
   CREATIVE1_PATTERN_BLINK_BOX,
   CREATIVE1_PATTERN_BLINK_LABEL,
+  CREATIVE1_PATTERN_MARQUEE_BOX,
+  CREATIVE1_PATTERN_MARQUEE_LABEL,
 
   CONFIG1_BOX,
   CONFIG1_TITLE1,
@@ -82,7 +84,7 @@ enum Elem
   PLAY1_START     = PLAY1_BOX,
   PLAY1_END       = PLAY1_BUTTON_FILE12,
   CREATIVE1_START = CREATIVE1_BOX,
-  CREATIVE1_END   = CREATIVE1_PATTERN_BLINK_LABEL,
+  CREATIVE1_END   = CREATIVE1_PATTERN_MARQUEE_LABEL,
   CONFIG1_START   = CONFIG1_BOX,
   CONFIG1_END     = CONFIG1_INFO_REPETITIONS,
 };
@@ -108,6 +110,7 @@ gslc_tsXSlider   sliderG;
 gslc_tsXSlider   sliderB;
 gslc_tsXCheckbox checkboxLight;
 gslc_tsXCheckbox checkboxBlink;
+gslc_tsXCheckbox checkboxMarquee;
 gslc_tsXSlider   sliderBrightness;
 gslc_tsXSlider   sliderSpeed;
 gslc_tsXSlider   sliderCountdown;
@@ -209,6 +212,9 @@ void handleEventPageCreative1(void *gui, int id)
     } else if (gslc_ElemXCheckboxGetState(
                  gui, &elemRefs[Elem::CREATIVE1_PATTERN_BLINK_BOX])) {
       stickConfig.animation = ANIM_BLINK;
+    } else if (gslc_ElemXCheckboxGetState(
+                 gui, &elemRefs[Elem::CREATIVE1_PATTERN_MARQUEE_BOX])) {
+      stickConfig.animation = ANIM_MARQUEE;
     }
 
     const uint8_t r =
@@ -570,6 +576,19 @@ void Gui::init()
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_BLINK_LABEL, Page::CREATIVE1,
                            230, 100, 50, 20, "Blinken 1 Sek",
+                           &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
+                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+    }
+    {
+      gslc_tsElemRef *checkbox = gslc_ElemXCheckboxCreate(
+        &gui, CREATIVE1_PATTERN_MARQUEE_BOX, Page::CREATIVE1, &checkboxMarquee,
+        (gslc_tsRect){ 180, 130, 15, 15 }, true, GSLCX_CHECKBOX_STYLE_ROUND,
+        TMP_COL2, false);
+      gslc_ElemSetCol(&gui, checkbox, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                      GSLC_COL_WHITE);
+      gslc_ElemSetGroup(&gui, checkbox, 1);
+      gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_MARQUEE_LABEL,
+                           Page::CREATIVE1, 230, 130, 50, 20, "Laufband",
                            &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
                            GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
     }

@@ -63,7 +63,7 @@ void animate()
   switch (stick.animation) {
   case ANIM_LIGHT:
     FastLED.showColor(stick.animationColor);
-    delay(500);
+    delay(1000);
     break;
 
   case ANIM_BLINK:
@@ -75,6 +75,26 @@ void animate()
       delay(500);
     }
     break;
+
+  case ANIM_MARQUEE:
+    FastLED.clear();
+    leds[stick.step] = stick.animationColor;
+    FastLED.show();
+    break;
+  }
+}
+
+uint16_t getAnimationSteps(Animation anim)
+{
+  switch (anim) {
+  case ANIM_LIGHT:
+    return 1;
+  case ANIM_BLINK:
+    return 2;
+  case ANIM_MARQUEE:
+    return NUM_LEDS;
+  default:
+    return 0;
   }
 }
 
@@ -125,7 +145,7 @@ void loop()
         stick.nextState      = StickState::CREATIVE;
         stick.animation      = cfg.animation;
         stick.animationColor = cfg.animationColor;
-        stick.maxStep        = 2; // TODO
+        stick.maxStep        = getAnimationSteps(stick.animation);
         stick.delayMs        = 0; // TODO
       }
 

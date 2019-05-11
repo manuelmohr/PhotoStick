@@ -24,6 +24,7 @@ enum Animation
 {
   ANIM_LIGHT,
   ANIM_BLINK,
+  ANIM_MARQUEE,
 };
 
 struct StickConfig
