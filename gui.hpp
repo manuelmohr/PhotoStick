@@ -10,6 +10,7 @@ namespace Gui
 {
 void init();
 void update();
+void setBacklight(bool on);
 bool readyToGo(StickConfig &cfg);
 }
 

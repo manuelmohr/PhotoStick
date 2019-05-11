@@ -26,6 +26,7 @@ struct
   unsigned long startMs;
   unsigned long durationMs;
   StickState    nextState;
+  uint8_t       repetitions;
 } stick;
 }
 
@@ -63,17 +64,16 @@ void loop()
 
   case StickState::IMAGE:
     bmpLoadRow(stick.bmpFile, stick.row, &leds[0]);
-    stick.row = (stick.row + 1) % stick.bmpFile.height;
+    ++stick.row;
     FastLED.show();
     break;
 
   case StickState::CREATIVE:
-    // TODO Display the chosen
+    // TODO Display the chosen animation
     break;
 
   case StickState::PAUSE:
-    // TODO: Turn off display:
-    // https://learn.adafruit.com/2-8-tft-touch-shield/controlling-the-backlight
+    Gui::setBacklight(false);
     break;
   }
 
@@ -86,22 +86,30 @@ void loop()
         bmpOpen(stick.bmpFile, cfg.fileToLoad);
         stick.row       = 0;
         stick.nextState = StickState::IMAGE;
-        stick.bmpFile   = BMPFile(); // TODO Reset correct?
       } else {
         // TODO: Condition for switch to CREATIVE
       }
-      stick.state      = StickState::PAUSE;
-      stick.startMs    = millis();
-      stick.durationMs = 2000;
+      stick.state       = StickState::PAUSE;
+      stick.startMs     = millis();
+      stick.durationMs  = cfg.countdown * 1000;
+      stick.repetitions = cfg.repetitions;
+      FastLED.setBrightness(cfg.brightness * 10);
+      // TODO: Speed
     }
     break;
   }
   case StickState::IMAGE:
     if (stick.row == stick.bmpFile.height) {
-      stick.state      = StickState::PAUSE;
-      stick.nextState  = StickState::GUI;
-      stick.startMs    = millis();
-      stick.durationMs = 2000;
+      --stick.repetitions;
+      stick.row = 0;
+    }
+
+    if (stick.repetitions == 0) {
+      FastLED.clear();
+      FastLED.show();
+      stick.state     = StickState::PAUSE;
+      stick.nextState = StickState::GUI;
+      stick.startMs   = millis();
     }
     break;
 
@@ -113,7 +121,7 @@ void loop()
     if (millis() - stick.startMs >= stick.durationMs) {
       stick.startMs = millis();
       stick.state   = stick.nextState;
-      // TODO: Turn on display
+      Gui::setBacklight(true);
     }
     break;
   }

@@ -681,13 +681,22 @@ void Gui::update()
   gslc_Update(&gui);
 }
 
+// See:
+// https://learn.adafruit.com/2-8-tft-touch-shield/controlling-the-backlight
+void Gui::setBacklight(bool on)
+{
+  const int backlightPin = 3;
+  digitalWrite(backlightPin, on ? LOW : HIGH); // TODO
+}
+
 bool Gui::readyToGo(StickConfig &cfg)
 {
   if (!isReadyToGo) {
     return false;
   }
 
-  cfg = stickConfig;
+  cfg         = stickConfig;
+  isReadyToGo = false;
   return true;
 }
 
