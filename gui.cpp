@@ -6,131 +6,231 @@
 
 using namespace Gui;
 
-const char *Gui::fileToLoad = nullptr;
+namespace
+{
+enum Page
+{
+  MAIN = 0,
+  PLAY1,
+  PLAY2,
+  CREATIVE1,
+  CREATIVE2,
+  MAX_PAGES,
+};
+
+enum Elem
+{
+  MAIN_BOX,
+  MAIN_TITLE1,
+  MAIN_TITLE2,
+  MAIN_BUTTON_PLAY,
+  MAIN_BUTTON_CREATIVE,
+
+  PLAY1_BOX,
+  PLAY1_TITLE1,
+  PLAY1_TITLE2,
+  PLAY1_BUTTON_BACK,
+  PLAY1_BUTTON_FORWARD,
+  PLAY1_BUTTON_FILE1,
+  PLAY1_BUTTON_FILE2,
+  PLAY1_BUTTON_FILE3,
+  PLAY1_BUTTON_FILE4,
+  PLAY1_BUTTON_FILE5,
+  PLAY1_BUTTON_FILE6,
+  PLAY1_BUTTON_FILE7,
+  PLAY1_BUTTON_FILE8,
+  PLAY1_BUTTON_FILE9,
+  PLAY1_BUTTON_FILE10,
+  PLAY1_BUTTON_FILE11,
+  PLAY1_BUTTON_FILE12,
+
+  PLAY2_BOX,
+  PLAY2_TITLE1,
+  PLAY2_TITLE2,
+  PLAY2_BUTTON_BACK,
+  PLAY2_BUTTON_GO,
+
+  CREATIVE1_BOX,
+  CREATIVE1_TITLE1,
+  CREATIVE1_TITLE2,
+  CREATIVE1_BUTTON_BACK,
+  CREATIVE1_BUTTON_GO,
+  CREATIVE1_SLIDER_R,
+  CREATIVE1_SLIDER_G,
+  CREATIVE1_SLIDER_B,
+  CREATIVE1_SLIDER_TIME,
+  CREATIVE1_COLORBOX,
+  CREATIVE1_PATTERN_LIGHT_BOX,
+  CREATIVE1_PATTERN_LIGHT_LABEL,
+  CREATIVE1_PATTERN_BLINK_BOX,
+  CREATIVE1_PATTERN_BLINK_LABEL,
+
+  CREATIVE2_DUMMY,
+
+  MAX_ELEMS,
+
+  MAIN_START      = MAIN_BOX,
+  MAIN_END        = MAIN_BUTTON_CREATIVE,
+  PLAY1_START     = PLAY1_BOX,
+  PLAY1_END       = PLAY1_BUTTON_FILE12,
+  PLAY2_START     = PLAY2_BOX,
+  PLAY2_END       = PLAY2_BUTTON_GO,
+  CREATIVE1_START = CREATIVE1_BOX,
+  CREATIVE1_END   = CREATIVE1_PATTERN_BLINK_LABEL,
+  CREATIVE2_START = CREATIVE2_DUMMY,
+  CREATIVE2_END   = CREATIVE2_DUMMY,
+};
+
+enum Font
+{
+  TEXT = 0,
+  TITLE,
+  MAX_FONTS,
+};
+} // end anonymous namespace enums
 
 namespace
 {
 gslc_tsGui       gui;
 gslc_tsDriver    driver;
-gslc_tsPage      pages[Gui::Page::MAX_PAGES];
-gslc_tsElem      elems[Gui::Elem::MAX_ELEMS];
-gslc_tsElemRef   elemRefs[Gui::Elem::MAX_ELEMS];
-gslc_tsFont      fonts[Gui::Font::MAX_FONTS];
+gslc_tsPage      pages[Page::MAX_PAGES];
+gslc_tsElem      elems[Elem::MAX_ELEMS];
+gslc_tsElemRef   elemRefs[Elem::MAX_ELEMS];
+gslc_tsFont      fonts[Font::MAX_FONTS];
 gslc_tsXSlider   sliderR;
 gslc_tsXSlider   sliderG;
 gslc_tsXSlider   sliderB;
 gslc_tsXSlider   sliderTime;
 gslc_tsXCheckbox checkboxLight;
 gslc_tsXCheckbox checkboxBlink;
-Gui::Page        currentPage = Page::MAIN;
 char             filenames[12][16];
 int              selectedFile = -1;
+const char *     fileToLoad   = nullptr;
+} // end anonymous namespace variables
 
+namespace
+{
 int16_t glscDebugOut(char ch)
 {
   Serial.write(ch);
   return 0;
 }
 
+void handleEventPageMain(void *gui, int id)
+{
+  switch (id) {
+  case Elem::MAIN_BUTTON_PLAY:
+    gslc_SetPageCur(gui, Page::PLAY1);
+    break;
+
+  case Elem::MAIN_BUTTON_CREATIVE:
+    gslc_SetPageCur(gui, Page::CREATIVE1);
+    break;
+  }
+}
+
+void handleEventPagePlay1(void *gui, int id, void *elemRef)
+{
+  switch (id) {
+  case Elem::PLAY1_BUTTON_FILE1:
+  case Elem::PLAY1_BUTTON_FILE2:
+  case Elem::PLAY1_BUTTON_FILE3:
+  case Elem::PLAY1_BUTTON_FILE4:
+  case Elem::PLAY1_BUTTON_FILE5:
+  case Elem::PLAY1_BUTTON_FILE6:
+  case Elem::PLAY1_BUTTON_FILE7:
+  case Elem::PLAY1_BUTTON_FILE8:
+  case Elem::PLAY1_BUTTON_FILE9:
+  case Elem::PLAY1_BUTTON_FILE10:
+  case Elem::PLAY1_BUTTON_FILE11:
+  case Elem::PLAY1_BUTTON_FILE12: {
+    const int fileId = id - Elem::PLAY1_BUTTON_FILE1;
+    if (selectedFile != -1) {
+      /* Deselect */
+      gslc_ElemSetCol(gui, &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
+                      GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4, GSLC_COL_WHITE);
+      gslc_ElemSetTxtCol(gui,
+                         &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
+                         GSLC_COL_WHITE);
+    }
+
+    if (selectedFile == fileId) {
+      selectedFile = -1;
+    } else {
+      /* Select */
+      selectedFile = fileId;
+      gslc_ElemSetCol(gui, elemRef, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                      GSLC_COL_BLUE_DK4);
+      gslc_ElemSetTxtCol(gui,
+                         &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
+                         GSLC_COL_BLUE_DK4);
+    }
+    break;
+  }
+
+  case Elem::PLAY1_BUTTON_BACK:
+    fileToLoad = nullptr;
+    gslc_SetPageCur(gui, Page::MAIN);
+    break;
+
+  case Elem::PLAY1_BUTTON_FORWARD:
+    if (selectedFile != -1) {
+      fileToLoad = filenames[selectedFile];
+      gslc_SetPageCur(gui, Page::PLAY2);
+    }
+    break;
+  }
+}
+
+void handleEventPagePlay2(void *gui, int id)
+{
+  switch (id) {
+  case Elem::PLAY2_BUTTON_BACK:
+    gslc_SetPageCur(gui, Page::PLAY1);
+    break;
+
+  case Elem::PLAY2_BUTTON_GO:
+    gslc_SetPageCur(gui, Page::MAIN); // TODO
+    break;
+  }
+}
+
+void handleEventPageCreative1(void *gui, int id)
+{
+  switch (id) {
+  case Elem::CREATIVE1_BUTTON_BACK:
+    gslc_SetPageCur(gui, Page::MAIN);
+    break;
+
+  case Elem::CREATIVE1_BUTTON_GO:
+    gslc_SetPageCur(gui, Page::MAIN); // TODO
+    break;
+  }
+}
+
 bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
                    int16_t y)
 {
   if (event != GSLC_TOUCH_UP_IN) {
-    return true;
+    return false;
   }
 
-  Serial.println("click");
-
   const int id = gslc_ElemGetId(gui, elemRef);
-  switch (currentPage) {
+  switch (gslc_GetPageCur(gui)) {
   case Page::MAIN:
-    switch (id) {
-    case Elem::MAIN_BUTTON_PLAY:
-      currentPage = Page::PLAY1;
-      break;
-
-    case Elem::MAIN_BUTTON_CREATIVE:
-      currentPage = Page::CREATIVE1;
-      break;
-    }
+    handleEventPageMain(gui, id);
     break;
 
   case Page::PLAY1:
-    switch (id) {
-    case Elem::PLAY1_BUTTON_FILE1:
-    case Elem::PLAY1_BUTTON_FILE2:
-    case Elem::PLAY1_BUTTON_FILE3:
-    case Elem::PLAY1_BUTTON_FILE4:
-    case Elem::PLAY1_BUTTON_FILE5:
-    case Elem::PLAY1_BUTTON_FILE6:
-    case Elem::PLAY1_BUTTON_FILE7:
-    case Elem::PLAY1_BUTTON_FILE8:
-    case Elem::PLAY1_BUTTON_FILE9:
-    case Elem::PLAY1_BUTTON_FILE10:
-    case Elem::PLAY1_BUTTON_FILE11:
-    case Elem::PLAY1_BUTTON_FILE12: {
-      const int fileId = id - Elem::PLAY1_BUTTON_FILE1;
-      if (selectedFile != -1) {
-        /* Deselect */
-        Serial.println("deselect");
-        gslc_ElemSetCol(gui, &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                        GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4, GSLC_COL_WHITE);
-        gslc_ElemSetTxtCol(gui,
-                           &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                           GSLC_COL_WHITE);
-      }
-
-      if (selectedFile == fileId) {
-        selectedFile = -1;
-      } else {
-        /* Select */
-        Serial.println("select");
-        selectedFile = fileId;
-        gslc_ElemSetCol(gui, elemRef, GSLC_COL_WHITE, GSLC_COL_WHITE,
-                        GSLC_COL_BLUE_DK4);
-        gslc_ElemSetTxtCol(gui,
-                           &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                           GSLC_COL_BLUE_DK4);
-      }
-      break;
-    }
-
-    case Elem::PLAY1_BUTTON_BACK:
-      fileToLoad  = nullptr;
-      currentPage = Page::MAIN;
-      break;
-
-    case Elem::PLAY1_BUTTON_FORWARD:
-      if (selectedFile != -1) {
-        fileToLoad  = filenames[selectedFile];
-        currentPage = Page::PLAY2;
-      }
-      break;
-    }
+    handleEventPagePlay1(gui, id, elemRef);
     break;
 
   case Page::PLAY2:
-    switch (id) {
-    case Elem::PLAY2_BUTTON_BACK:
-      currentPage = Page::PLAY1;
-      break;
-
-    case Elem::PLAY2_BUTTON_GO:
-      currentPage = Page::MAIN; // TODO
-      break;
-    }
+    handleEventPagePlay2(gui, id);
     break;
 
   case Page::CREATIVE1:
-    switch (id) {
-    case Elem::CREATIVE1_BUTTON_BACK:
-      currentPage = Page::MAIN;
-      break;
-
-    case Elem::CREATIVE1_BUTTON_GO:
-      currentPage = Page::MAIN; // TODO
-      break;
-    }
+    handleEventPageCreative1(gui, id);
     break;
   }
 
@@ -218,12 +318,6 @@ void Gui::init()
     const size_t numElems = Elem::PLAY2_END - Elem::PLAY2_START + 1;
     gslc_PageAdd(&gui, Page::PLAY2, &elems[Elem::PLAY2_START], numElems,
                  &elemRefs[Elem::PLAY2_START], numElems);
-  }
-
-  {
-    const size_t numElems = Elem::PLAY3_END - Elem::PLAY3_START + 1;
-    gslc_PageAdd(&gui, Page::PLAY3, &elems[Elem::PLAY3_START], numElems,
-                 &elemRefs[Elem::PLAY3_START], numElems);
   }
 
   {
@@ -455,11 +549,14 @@ void Gui::init()
 
 void Gui::update()
 {
-  if (gslc_GetPageCur(&gui) != currentPage) {
-    gslc_SetPageCur(&gui, currentPage);
-  }
-
   gslc_Update(&gui);
+}
+
+const char *Gui::consumeFileToLoad()
+{
+  const char *file = fileToLoad;
+  fileToLoad       = nullptr;
+  return file;
 }
 
 // vim: et ts=2

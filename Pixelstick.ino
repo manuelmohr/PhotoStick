@@ -6,8 +6,28 @@
 
 #include <string.h>
 
-CRGB    leds[NUM_LEDS];
-BMPFile bmpFile;
+namespace
+{
+CRGB leds[NUM_LEDS];
+
+enum class StickState
+{
+  GUI,
+  IMAGE,
+  CREATIVE,
+  PAUSE,
+};
+
+struct
+{
+  StickState    state;
+  BMPFile       bmpFile;
+  uint32_t      row;
+  unsigned long startMs;
+  unsigned long durationMs;
+  StickState    nextState;
+} stick;
+}
 
 void initSdCard()
 {
@@ -18,7 +38,7 @@ void initSdCard()
   Serial.println(F("OK!"));
 }
 
-void setup(void)
+void setup()
 {
   Serial.begin(9600);
   Serial.println(F("Pixelstick\n"));
@@ -26,7 +46,7 @@ void setup(void)
   initSdCard();
 
   Gui::init();
-  Gui::update();
+  stick.state = StickState::GUI;
 
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(25);
@@ -35,18 +55,63 @@ void setup(void)
 
 void loop()
 {
-  Gui::update();
+  // Update logic
+  switch (stick.state) {
+  case StickState::GUI:
+    Gui::update();
+    break;
 
-  if (Gui::fileToLoad != nullptr) {
-    bmpOpen(bmpFile, Gui::fileToLoad);
-    Gui::fileToLoad = nullptr;
+  case StickState::IMAGE:
+    bmpLoadRow(stick.bmpFile, stick.row, &leds[0]);
+    stick.row = (stick.row + 1) % stick.bmpFile.height;
+    FastLED.show();
+    break;
+
+  case StickState::CREATIVE:
+    // TODO Display the chosen
+    break;
+
+  case StickState::PAUSE:
+    // TODO: Turn off display:
+    // https://learn.adafruit.com/2-8-tft-touch-shield/controlling-the-backlight
+    break;
   }
 
-  if (bmpFile.height != 0) {
-    static uint32_t row = 0;
-    bmpLoadRow(bmpFile, row, &leds[0]);
-    row = (row + 1) % bmpFile.height;
-    FastLED.show();
+  // Transition criteria
+  switch (stick.state) {
+  case StickState::GUI:
+    if (const char *fileToLoad = Gui::consumeFileToLoad()) {
+      bmpOpen(stick.bmpFile, fileToLoad);
+      stick.bmpFile    = BMPFile();
+      stick.row        = 0;
+      stick.state      = StickState::PAUSE;
+      stick.nextState  = StickState::IMAGE;
+      stick.startMs    = millis();
+      stick.durationMs = 2000;
+    }
+    // TODO: Condition for switch to CREATIVE
+    break;
+
+  case StickState::IMAGE:
+    if (stick.row == stick.bmpFile.height) {
+      stick.state      = StickState::PAUSE;
+      stick.nextState  = StickState::GUI;
+      stick.startMs    = millis();
+      stick.durationMs = 2000;
+    }
+    break;
+
+  case StickState::CREATIVE:
+    // TODO
+    break;
+
+  case StickState::PAUSE:
+    if (millis() - stick.startMs >= stick.durationMs) {
+      stick.startMs = millis();
+      stick.state   = stick.nextState;
+      // TODO: Turn on display
+    }
+    break;
   }
 }
 
