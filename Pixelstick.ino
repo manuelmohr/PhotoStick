@@ -27,6 +27,7 @@ struct
   unsigned long durationMs;
   StickState    nextState;
   uint8_t       repetitions;
+  uint8_t       delayMs;
 } stick;
 }
 
@@ -66,6 +67,7 @@ void loop()
     bmpLoadRow(stick.bmpFile, stick.row, &leds[0]);
     ++stick.row;
     FastLED.show();
+    delay(stick.delayMs);
     break;
 
   case StickState::CREATIVE:
@@ -94,7 +96,14 @@ void loop()
       stick.durationMs  = cfg.countdown * 1000;
       stick.repetitions = cfg.repetitions;
       FastLED.setBrightness(cfg.brightness * 10);
-      // TODO: Speed
+      // We can do 382 pixel rows in about 16 seconds.
+      // Hence, we do about 23 rows per second and each row takes about 45ms.
+      // We consider 1 row per second as "0% speed", so we know the following:
+      // - For 100% speed (i.e., speed == 10), delay = 0
+      // - For   0% speed (i.e., speed ==  0), delay = 955
+      // In between, we want to interpolate linearly.  Hence, we can use the
+      // linear equation delay = 950 - speed * 95 to approximate this.
+      stick.delayMs = 950 - cfg.speed * 95;
     }
     break;
   }
