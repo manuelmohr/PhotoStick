@@ -173,7 +173,7 @@ void handleEventPagePlay1(void *gui, int id, void *elemRef)
   case Elem::PLAY1_BUTTON_FORWARD:
     if (selectedFile != -1) {
       fileToLoad = filenames[selectedFile];
-      lastPage   = Page::CREATIVE1;
+      lastPage   = Page::PLAY1;
       gslc_SetPageCur(gui, Page::CONFIG1);
     }
     break;
