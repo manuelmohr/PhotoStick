@@ -1,7 +1,7 @@
-#include "gui.hpp"
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
 #include "bmp.hpp"
+#include "gui.hpp"
 #include "util.hpp"
 
 using namespace Gui;
@@ -12,9 +12,8 @@ enum Page
 {
   MAIN = 0,
   PLAY1,
-  PLAY2,
   CREATIVE1,
-  CREATIVE2,
+  CONFIG1,
   MAX_PAGES,
 };
 
@@ -44,12 +43,6 @@ enum Elem
   PLAY1_BUTTON_FILE11,
   PLAY1_BUTTON_FILE12,
 
-  PLAY2_BOX,
-  PLAY2_TITLE1,
-  PLAY2_TITLE2,
-  PLAY2_BUTTON_BACK,
-  PLAY2_BUTTON_GO,
-
   CREATIVE1_BOX,
   CREATIVE1_TITLE1,
   CREATIVE1_TITLE2,
@@ -65,7 +58,11 @@ enum Elem
   CREATIVE1_PATTERN_BLINK_BOX,
   CREATIVE1_PATTERN_BLINK_LABEL,
 
-  CREATIVE2_DUMMY,
+  CONFIG1_BOX,
+  CONFIG1_TITLE1,
+  CONFIG1_TITLE2,
+  CONFIG1_BUTTON_BACK,
+  CONFIG1_BUTTON_GO,
 
   MAX_ELEMS,
 
@@ -73,12 +70,10 @@ enum Elem
   MAIN_END        = MAIN_BUTTON_CREATIVE,
   PLAY1_START     = PLAY1_BOX,
   PLAY1_END       = PLAY1_BUTTON_FILE12,
-  PLAY2_START     = PLAY2_BOX,
-  PLAY2_END       = PLAY2_BUTTON_GO,
   CREATIVE1_START = CREATIVE1_BOX,
   CREATIVE1_END   = CREATIVE1_PATTERN_BLINK_LABEL,
-  CREATIVE2_START = CREATIVE2_DUMMY,
-  CREATIVE2_END   = CREATIVE2_DUMMY,
+  CONFIG1_START   = CONFIG1_BOX,
+  CONFIG1_END     = CONFIG1_BUTTON_GO,
 };
 
 enum Font
@@ -106,6 +101,8 @@ gslc_tsXCheckbox checkboxBlink;
 char             filenames[12][16];
 int              selectedFile = -1;
 const char *     fileToLoad   = nullptr;
+Page             lastPage     = MAX_PAGES;
+bool             isReadyToGo  = false;
 } // end anonymous namespace variables
 
 namespace
@@ -176,21 +173,9 @@ void handleEventPagePlay1(void *gui, int id, void *elemRef)
   case Elem::PLAY1_BUTTON_FORWARD:
     if (selectedFile != -1) {
       fileToLoad = filenames[selectedFile];
-      gslc_SetPageCur(gui, Page::PLAY2);
+      lastPage   = Page::CREATIVE1;
+      gslc_SetPageCur(gui, Page::CONFIG1);
     }
-    break;
-  }
-}
-
-void handleEventPagePlay2(void *gui, int id)
-{
-  switch (id) {
-  case Elem::PLAY2_BUTTON_BACK:
-    gslc_SetPageCur(gui, Page::PLAY1);
-    break;
-
-  case Elem::PLAY2_BUTTON_GO:
-    gslc_SetPageCur(gui, Page::MAIN); // TODO
     break;
   }
 }
@@ -203,6 +188,20 @@ void handleEventPageCreative1(void *gui, int id)
     break;
 
   case Elem::CREATIVE1_BUTTON_GO:
+    lastPage = Page::CREATIVE1;
+    gslc_SetPageCur(gui, Page::CONFIG1);
+    break;
+  }
+}
+
+void handleEventPageConfig1(void *gui, int id)
+{
+  switch (id) {
+  case Elem::CONFIG1_BUTTON_BACK:
+    gslc_SetPageCur(gui, lastPage);
+    break;
+
+  case Elem::CONFIG1_BUTTON_GO:
     gslc_SetPageCur(gui, Page::MAIN); // TODO
     break;
   }
@@ -225,12 +224,12 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
     handleEventPagePlay1(gui, id, elemRef);
     break;
 
-  case Page::PLAY2:
-    handleEventPagePlay2(gui, id);
-    break;
-
   case Page::CREATIVE1:
     handleEventPageCreative1(gui, id);
+    break;
+
+  case Page::CONFIG1:
+    handleEventPageConfig1(gui, id);
     break;
   }
 
@@ -259,6 +258,7 @@ bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
   case Elem::CREATIVE1_SLIDER_B:
     posSliderB = nPos;
     break;
+  // TODO Add brightness slider
   default:
     break;
   }
@@ -315,21 +315,15 @@ void Gui::init()
   }
 
   {
-    const size_t numElems = Elem::PLAY2_END - Elem::PLAY2_START + 1;
-    gslc_PageAdd(&gui, Page::PLAY2, &elems[Elem::PLAY2_START], numElems,
-                 &elemRefs[Elem::PLAY2_START], numElems);
-  }
-
-  {
     const size_t numElems = Elem::CREATIVE1_END - Elem::CREATIVE1_START + 1;
     gslc_PageAdd(&gui, Page::CREATIVE1, &elems[Elem::CREATIVE1_START], numElems,
                  &elemRefs[Elem::CREATIVE1_START], numElems);
   }
 
   {
-    const size_t numElems = Elem::CREATIVE2_END - Elem::CREATIVE2_START + 1;
-    gslc_PageAdd(&gui, Page::CREATIVE2, &elems[Elem::CREATIVE2_START], numElems,
-                 &elemRefs[Elem::CREATIVE2_START], numElems);
+    const size_t numElems = Elem::CONFIG1_END - Elem::CONFIG1_START + 1;
+    gslc_PageAdd(&gui, Page::CONFIG1, &elems[Elem::CONFIG1_START], numElems,
+                 &elemRefs[Elem::CONFIG1_START], numElems);
   }
 
   /*
@@ -408,28 +402,6 @@ void Gui::init()
     }
   }
   root.close();
-
-  /*
-   * PLAY2 PAGE
-   */
-  gslc_ElemCreateBox_P(&gui, PLAY2_BOX, Page::PLAY2, 10, 50, 300, 180,
-                       GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL, NULL);
-  gslc_ElemCreateTxt_P(&gui, PLAY2_TITLE1, Page::PLAY2, 2, 2, 320, 50, "Konfig",
-                       &fonts[Font::TITLE], TMP_COL1, GSLC_COL_BLACK,
-                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
-  gslc_ElemCreateTxt_P(&gui, PLAY2_TITLE2, Page::PLAY2, 0, 0, 320, 50, "Konfig",
-                       &fonts[Font::TITLE], TMP_COL2, GSLC_COL_BLACK,
-                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
-  gslc_ElemCreateBtnTxt_P(&gui, PLAY2_BUTTON_BACK, Page::PLAY2, 20, 20, 50, 30,
-                          "Zurueck", &fonts[Font::TEXT], GSLC_COL_WHITE,
-                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
-                          GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
-                          &buttonClicked, nullptr);
-  gslc_ElemCreateBtnTxt_P(&gui, PLAY2_BUTTON_GO, Page::PLAY2, 160, 200, 50, 30,
-                          "START", &fonts[Font::TEXT], GSLC_COL_WHITE,
-                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
-                          GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
-                          &buttonClicked, nullptr);
 
   /*
    * CREATIVE1 PAGE
@@ -543,6 +515,28 @@ void Gui::init()
     }
   }
 
+  /*
+   * CONFIG1 PAGE
+   */
+  gslc_ElemCreateBox_P(&gui, CONFIG1_BOX, Page::CONFIG1, 10, 50, 300, 180,
+                       GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL, NULL);
+  gslc_ElemCreateTxt_P(&gui, CONFIG1_TITLE1, Page::CONFIG1, 2, 2, 320, 50,
+                       "Konfig", &fonts[Font::TITLE], TMP_COL1, GSLC_COL_BLACK,
+                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+  gslc_ElemCreateTxt_P(&gui, CONFIG1_TITLE2, Page::CONFIG1, 0, 0, 320, 50,
+                       "Konfig", &fonts[Font::TITLE], TMP_COL2, GSLC_COL_BLACK,
+                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+  gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_BACK, Page::CONFIG1, 20, 20, 50,
+                          30, "Zurueck", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                          GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
+                          &buttonClicked, nullptr);
+  gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_GO, Page::CONFIG1, 160, 200, 50,
+                          30, "START", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                          GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
+                          &buttonClicked, nullptr);
+
   gslc_SetPageCur(&gui, Page::MAIN);
   Serial.println(F("successful"));
 }
@@ -552,11 +546,14 @@ void Gui::update()
   gslc_Update(&gui);
 }
 
-const char *Gui::consumeFileToLoad()
+bool Gui::readyToGo(StickConfig &cfg)
 {
-  const char *file = fileToLoad;
-  fileToLoad       = nullptr;
-  return file;
+  if (!isReadyToGo) {
+    return false;
+  }
+
+  cfg.fileToLoad = fileToLoad;
+  return true;
 }
 
 // vim: et ts=2

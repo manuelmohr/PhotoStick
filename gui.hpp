@@ -4,12 +4,13 @@
 #include "GUIslice.h"
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
+#include "util.hpp"
 
 namespace Gui
 {
-void        init();
-void        update();
-const char *consumeFileToLoad();
+void init();
+void update();
+bool readyToGo(StickConfig &cfg);
 }
 
 #endif

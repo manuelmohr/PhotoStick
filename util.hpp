@@ -19,6 +19,11 @@
 
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
+struct StickConfig
+{
+  const char *fileToLoad;
+};
+
 #endif
 
 // vim: et ts=2

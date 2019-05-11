@@ -79,19 +79,23 @@ void loop()
 
   // Transition criteria
   switch (stick.state) {
-  case StickState::GUI:
-    if (const char *fileToLoad = Gui::consumeFileToLoad()) {
-      bmpOpen(stick.bmpFile, fileToLoad);
-      stick.bmpFile    = BMPFile();
-      stick.row        = 0;
+  case StickState::GUI: {
+    StickConfig cfg;
+    if (Gui::readyToGo(cfg)) {
+      if (cfg.fileToLoad != nullptr) {
+        bmpOpen(stick.bmpFile, cfg.fileToLoad);
+        stick.row       = 0;
+        stick.nextState = StickState::IMAGE;
+        stick.bmpFile   = BMPFile(); // TODO Reset correct?
+      } else {
+        // TODO: Condition for switch to CREATIVE
+      }
       stick.state      = StickState::PAUSE;
-      stick.nextState  = StickState::IMAGE;
       stick.startMs    = millis();
       stick.durationMs = 2000;
     }
-    // TODO: Condition for switch to CREATIVE
     break;
-
+  }
   case StickState::IMAGE:
     if (stick.row == stick.bmpFile.height) {
       stick.state      = StickState::PAUSE;
