@@ -51,7 +51,6 @@ enum Elem
   CREATIVE1_SLIDER_R,
   CREATIVE1_SLIDER_G,
   CREATIVE1_SLIDER_B,
-  CREATIVE1_SLIDER_TIME,
   CREATIVE1_COLORBOX,
   CREATIVE1_PATTERN_LIGHT_BOX,
   CREATIVE1_PATTERN_LIGHT_LABEL,
@@ -63,6 +62,18 @@ enum Elem
   CONFIG1_TITLE2,
   CONFIG1_BUTTON_BACK,
   CONFIG1_BUTTON_GO,
+  CONFIG1_TEXT_BRIGHTNESS,
+  CONFIG1_SLIDER_BRIGHTNESS,
+  CONFIG1_INFO_BRIGHTNESS,
+  CONFIG1_TEXT_SPEED,
+  CONFIG1_SLIDER_SPEED,
+  CONFIG1_INFO_SPEED,
+  CONFIG1_TEXT_COUNTDOWN,
+  CONFIG1_SLIDER_COUNTDOWN,
+  CONFIG1_INFO_COUNTDOWN,
+  CONFIG1_TEXT_REPETITIONS,
+  CONFIG1_SLIDER_REPETITIONS,
+  CONFIG1_INFO_REPETITIONS,
 
   MAX_ELEMS,
 
@@ -73,7 +84,7 @@ enum Elem
   CREATIVE1_START = CREATIVE1_BOX,
   CREATIVE1_END   = CREATIVE1_PATTERN_BLINK_LABEL,
   CONFIG1_START   = CONFIG1_BOX,
-  CONFIG1_END     = CONFIG1_BUTTON_GO,
+  CONFIG1_END     = CONFIG1_INFO_REPETITIONS,
 };
 
 enum Font
@@ -95,14 +106,17 @@ gslc_tsFont      fonts[Font::MAX_FONTS];
 gslc_tsXSlider   sliderR;
 gslc_tsXSlider   sliderG;
 gslc_tsXSlider   sliderB;
-gslc_tsXSlider   sliderTime;
 gslc_tsXCheckbox checkboxLight;
 gslc_tsXCheckbox checkboxBlink;
+gslc_tsXSlider   sliderBrightness;
+gslc_tsXSlider   sliderSpeed;
+gslc_tsXSlider   sliderCountdown;
+gslc_tsXSlider   sliderRepetitions;
 char             filenames[12][16];
 int              selectedFile = -1;
-const char *     fileToLoad   = nullptr;
 Page             lastPage     = MAX_PAGES;
 bool             isReadyToGo  = false;
+StickConfig      stickConfig;
 } // end anonymous namespace variables
 
 namespace
@@ -166,14 +180,14 @@ void handleEventPagePlay1(void *gui, int id, void *elemRef)
   }
 
   case Elem::PLAY1_BUTTON_BACK:
-    fileToLoad = nullptr;
+    stickConfig.fileToLoad = nullptr;
     gslc_SetPageCur(gui, Page::MAIN);
     break;
 
   case Elem::PLAY1_BUTTON_FORWARD:
     if (selectedFile != -1) {
-      fileToLoad = filenames[selectedFile];
-      lastPage   = Page::PLAY1;
+      stickConfig.fileToLoad = filenames[selectedFile];
+      lastPage               = Page::PLAY1;
       gslc_SetPageCur(gui, Page::CONFIG1);
     }
     break;
@@ -202,7 +216,16 @@ void handleEventPageConfig1(void *gui, int id)
     break;
 
   case Elem::CONFIG1_BUTTON_GO:
-    gslc_SetPageCur(gui, Page::MAIN); // TODO
+    stickConfig.brightness =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CONFIG1_SLIDER_BRIGHTNESS]);
+    stickConfig.speed =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CONFIG1_SLIDER_SPEED]);
+    stickConfig.countdown =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CONFIG1_SLIDER_COUNTDOWN]);
+    stickConfig.repetitions =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CONFIG1_SLIDER_REPETITIONS]);
+    isReadyToGo = true;
+    gslc_SetPageCur(gui, Page::MAIN);
     break;
   }
 }
@@ -258,7 +281,6 @@ bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
   case Elem::CREATIVE1_SLIDER_B:
     posSliderB = nPos;
     break;
-  // TODO Add brightness slider
   default:
     break;
   }
@@ -266,6 +288,38 @@ bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
   gslc_tsColor    col      = { posSliderR, posSliderG, posSliderB };
   gslc_tsElemRef *colorbox = &elemRefs[CREATIVE1_COLORBOX];
   gslc_ElemSetCol(gui, colorbox, GSLC_COL_WHITE, col, col);
+
+  return true;
+}
+
+bool sliderChangedConfig(void *pvGui, void *pvElemRef, int16_t nPos)
+{
+  gslc_tsGui *    gui     = (gslc_tsGui *)(pvGui);
+  gslc_tsElemRef *elemRef = (gslc_tsElemRef *)(pvElemRef);
+  gslc_tsElem *   elem    = elemRef->pElem;
+  gslc_tsXSlider *slider  = (gslc_tsXSlider *)(elem->pXData);
+
+  char buf[6];
+  switch (elem->nId) {
+  case Elem::CONFIG1_SLIDER_BRIGHTNESS:
+    snprintf(&buf[0], sizeof(buf), "%3d%%", 10 * nPos);
+    gslc_ElemSetTxtStr(gui, &elemRefs[CONFIG1_INFO_BRIGHTNESS], &buf[0]);
+    break;
+  case Elem::CONFIG1_SLIDER_SPEED:
+    snprintf(&buf[0], sizeof(buf), "%3d%%", 10 * nPos);
+    gslc_ElemSetTxtStr(gui, &elemRefs[CONFIG1_INFO_SPEED], &buf[0]);
+    break;
+  case Elem::CONFIG1_SLIDER_COUNTDOWN:
+    snprintf(&buf[0], sizeof(buf), "%1d Sek", nPos);
+    gslc_ElemSetTxtStr(gui, &elemRefs[CONFIG1_INFO_COUNTDOWN], &buf[0]);
+    break;
+  case Elem::CONFIG1_SLIDER_REPETITIONS:
+    snprintf(&buf[0], sizeof(buf), "%1d x", nPos);
+    gslc_ElemSetTxtStr(gui, &elemRefs[CONFIG1_INFO_REPETITIONS], &buf[0]);
+    break;
+  default:
+    break;
+  }
 
   return true;
 }
@@ -414,11 +468,11 @@ void Gui::init()
                          GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL,
                          NULL);
     gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE1, Page::CREATIVE1, 2, 2, 320, 50,
-                         "Konfig", &fonts[Font::TITLE], TMP_COL1,
+                         "Kreativ", &fonts[Font::TITLE], TMP_COL1,
                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                          false, false);
     gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE2, Page::CREATIVE1, 0, 0, 320, 50,
-                         "Konfig", &fonts[Font::TITLE], TMP_COL2,
+                         "Kreativ", &fonts[Font::TITLE], TMP_COL2,
                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                          false, false);
     gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_BACK, Page::CREATIVE1, 20,
@@ -466,17 +520,6 @@ void Gui::init()
       gslc_ElemSetCol(&gui, slider, GSLC_COL_BLUE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
       gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_BLUE_DK4, numTicks,
-                               tickLen, GSLC_COL_GRAY_DK2);
-      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
-    }
-    {
-      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
-        &gui, CREATIVE1_SLIDER_TIME, Page::CREATIVE1, &sliderTime,
-        (gslc_tsRect){ 20, 190, slideWidth, slideHeight }, 1, 10, 2,
-        thumbControlSize, false);
-      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
-                      GSLC_COL_BLACK);
-      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, numTicks,
                                tickLen, GSLC_COL_GRAY_DK2);
       gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChanged);
     }
@@ -531,12 +574,104 @@ void Gui::init()
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
-  gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_GO, Page::CONFIG1, 160, 200, 50,
-                          30, "START", &fonts[Font::TEXT], GSLC_COL_WHITE,
+  gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_GO, Page::CONFIG1, 260, 20, 50,
+                          30, "START!", &fonts[Font::TEXT], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
 
+  {
+    const uint16_t slideWidth       = 130;
+    const uint16_t slideHeight      = 30;
+    const uint16_t tickLen          = 4;
+    const uint16_t thumbControlSize = 12;
+    {
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_BRIGHTNESS, Page::CONFIG1, 10, 60,
+                           140, 50, "Helligkeit", &fonts[Font::TEXT],
+                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
+
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CONFIG1_SLIDER_BRIGHTNESS, Page::CONFIG1, &sliderBrightness,
+        (gslc_tsRect){ 140, 70, slideWidth, slideHeight }, 0, 10, 2,
+        thumbControlSize, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, 10, tickLen,
+                               GSLC_COL_WHITE);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChangedConfig);
+
+      static char text[] = " 20%";
+      gslc_ElemCreateTxt(&gui, CONFIG1_INFO_BRIGHTNESS, Page::CONFIG1,
+                         (gslc_tsRect){ 280, 60, 20, 40 }, &text[0],
+                         sizeof(text), Font::TEXT);
+    }
+    {
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_SPEED, Page::CONFIG1, 10, 100,
+                           140, 50, "Geschwindigkeit", &fonts[Font::TEXT],
+                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
+
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CONFIG1_SLIDER_SPEED, Page::CONFIG1, &sliderSpeed,
+        (gslc_tsRect){ 140, 110, slideWidth, slideHeight }, 0, 10, 10,
+        thumbControlSize, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, 10, tickLen,
+                               GSLC_COL_WHITE);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChangedConfig);
+
+      static char text[] = "100%";
+      gslc_ElemCreateTxt(&gui, CONFIG1_INFO_SPEED, Page::CONFIG1,
+                         (gslc_tsRect){ 280, 100, 20, 40 }, &text[0],
+                         sizeof(text), Font::TEXT);
+    }
+    {
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_COUNTDOWN, Page::CONFIG1, 10, 140,
+                           140, 50, "Countdown", &fonts[Font::TEXT],
+                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
+
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CONFIG1_SLIDER_COUNTDOWN, Page::CONFIG1, &sliderCountdown,
+        (gslc_tsRect){ 140, 150, slideWidth, slideHeight }, 0, 5, 2,
+        thumbControlSize, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, 6, tickLen,
+                               GSLC_COL_WHITE);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChangedConfig);
+
+      static char text[] = "2 Sek";
+      gslc_ElemCreateTxt(&gui, CONFIG1_INFO_COUNTDOWN, Page::CONFIG1,
+                         (gslc_tsRect){ 280, 140, 20, 40 }, &text[0],
+                         sizeof(text), Font::TEXT);
+    }
+    {
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_REPETITIONS, Page::CONFIG1, 10,
+                           180, 140, 50, "Wiederholungen", &fonts[Font::TEXT],
+                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
+
+      gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
+        &gui, CONFIG1_SLIDER_REPETITIONS, Page::CONFIG1, &sliderRepetitions,
+        (gslc_tsRect){ 140, 190, slideWidth, slideHeight }, 1, 5, 1,
+        thumbControlSize, false);
+      gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
+                      GSLC_COL_BLACK);
+      gslc_ElemXSliderSetStyle(&gui, slider, true, GSLC_COL_WHITE, 5, tickLen,
+                               GSLC_COL_WHITE);
+      gslc_ElemXSliderSetPosFunc(&gui, slider, &sliderChangedConfig);
+
+      static char text[] = "1 x";
+      gslc_ElemCreateTxt(&gui, CONFIG1_INFO_REPETITIONS, Page::CONFIG1,
+                         (gslc_tsRect){ 280, 180, 20, 40 }, &text[0],
+                         sizeof(text), Font::TEXT);
+    }
+  }
+
+  /* Init */
   gslc_SetPageCur(&gui, Page::MAIN);
   Serial.println(F("successful"));
 }
@@ -552,7 +687,7 @@ bool Gui::readyToGo(StickConfig &cfg)
     return false;
   }
 
-  cfg.fileToLoad = fileToLoad;
+  cfg = stickConfig;
   return true;
 }
 

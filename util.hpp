@@ -22,6 +22,10 @@ __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 struct StickConfig
 {
   const char *fileToLoad;
+  uint8_t     brightness;
+  uint8_t     speed;
+  uint8_t     countdown;
+  uint8_t     repetitions;
 };
 
 #endif
