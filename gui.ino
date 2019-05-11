@@ -201,10 +201,27 @@ void handleEventPageCreative1(void *gui, int id)
     gslc_SetPageCur(gui, Page::MAIN);
     break;
 
-  case Elem::CREATIVE1_BUTTON_GO:
+  case Elem::CREATIVE1_BUTTON_GO: {
     lastPage = Page::CREATIVE1;
+    if (gslc_ElemXCheckboxGetState(
+          gui, &elemRefs[Elem::CREATIVE1_PATTERN_LIGHT_BOX])) {
+      stickConfig.animation = ANIM_LIGHT;
+    } else if (gslc_ElemXCheckboxGetState(
+                 gui, &elemRefs[Elem::CREATIVE1_PATTERN_BLINK_BOX])) {
+      stickConfig.animation = ANIM_BLINK;
+    }
+
+    const uint8_t r =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CREATIVE1_SLIDER_R]);
+    const uint8_t g =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CREATIVE1_SLIDER_G]);
+    const uint8_t b =
+      gslc_ElemXSliderGetPos(gui, &elemRefs[Elem::CREATIVE1_SLIDER_B]);
+    stickConfig.animationColor = CRGB(r, g, b);
+
     gslc_SetPageCur(gui, Page::CONFIG1);
     break;
+  }
   }
 }
 
@@ -539,9 +556,9 @@ void Gui::init()
                       GSLC_COL_WHITE);
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_LIGHT_LABEL, Page::CREATIVE1,
-                           200, 70, 50, 20, "Leuchten", &fonts[Font::TEXT],
-                           TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
-                           GSLC_ALIGN_MID_MID, false, false);
+                           230, 70, 50, 20, "Leuchten 1 Sek",
+                           &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
+                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
     }
     {
       gslc_tsElemRef *checkbox = gslc_ElemXCheckboxCreate(
@@ -552,9 +569,9 @@ void Gui::init()
                       GSLC_COL_WHITE);
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_BLINK_LABEL, Page::CREATIVE1,
-                           200, 100, 50, 20, "Blinken", &fonts[Font::TEXT],
-                           TMP_COL2, GSLC_COL_BLACK, GSLC_COL_BLACK,
-                           GSLC_ALIGN_MID_MID, false, false);
+                           230, 100, 50, 20, "Blinken 1 Sek",
+                           &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
+                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
     }
   }
 
@@ -695,8 +712,12 @@ bool Gui::readyToGo(StickConfig &cfg)
     return false;
   }
 
-  cfg         = stickConfig;
+  cfg = stickConfig;
+
+  // Reset
+  stickConfig = StickConfig();
   isReadyToGo = false;
+
   return true;
 }
 

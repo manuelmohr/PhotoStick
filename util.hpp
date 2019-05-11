@@ -1,6 +1,7 @@
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
+#include "FastLED.h"
 #include "WString.h"
 
 // For led chips like Neopixels, which have a data line, ground, and power, you
@@ -19,9 +20,17 @@
 
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
+enum Animation
+{
+  ANIM_LIGHT,
+  ANIM_BLINK,
+};
+
 struct StickConfig
 {
   const char *fileToLoad;
+  Animation   animation;
+  CRGB        animationColor;
   uint8_t     brightness;
   uint8_t     speed;
   uint8_t     countdown;
