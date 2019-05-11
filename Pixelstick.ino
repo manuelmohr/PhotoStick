@@ -114,8 +114,7 @@ void loop()
     }
 
     if (stick.repetitions == 0) {
-      FastLED.clear();
-      FastLED.show();
+      FastLED.clear(true);
       stick.state     = StickState::PAUSE;
       stick.nextState = StickState::GUI;
       stick.startMs   = millis();
