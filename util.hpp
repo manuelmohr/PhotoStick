@@ -10,6 +10,9 @@
 // DATA_PIN and CLOCK_PIN
 #define DATA_PIN 2
 
+// Which pin controls the backlight state (off/on)?
+#define BACKLIGHT_PIN 3
+
 // SD card chip select
 #define SD_CS 4
 

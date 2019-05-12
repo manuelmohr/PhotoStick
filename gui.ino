@@ -702,13 +702,18 @@ void Gui::init()
 
       static char text[] = "1 x";
       gslc_ElemCreateTxt(&gui, CONFIG1_INFO_REPETITIONS, Page::CONFIG1,
-                         (gslc_tsRect){ 280, 180, 20, 40 }, &text[0],
+                         (gslc_tsRect){ 280, 140, 20, 40 }, &text[0],
                          sizeof(text), Font::TEXT);
     }
   }
 
   /* Init */
   gslc_SetPageCur(&gui, Page::MAIN);
+
+  /* Enable backlight */
+  pinMode(BACKLIGHT_PIN, OUTPUT);
+  setBacklight(true);
+
   Serial.println(F("successful"));
 }
 
@@ -718,11 +723,10 @@ void Gui::update()
 }
 
 // See:
-// https://learn.adafruit.com/2-8-tft-touch-shield/controlling-the-backlight
+// https://learn.adafruit.com/adafruit-2-8-tft-touch-shield-v2/backlight-touch-irq
 void Gui::setBacklight(bool on)
 {
-  const int backlightPin = 3;
-  digitalWrite(backlightPin, on ? LOW : HIGH); // TODO
+  digitalWrite(BACKLIGHT_PIN, on ? HIGH : LOW);
 }
 
 bool Gui::readyToGo(StickConfig &cfg)

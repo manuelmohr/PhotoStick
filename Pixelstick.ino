@@ -107,6 +107,7 @@ void loop()
     break;
 
   case StickState::IMAGE:
+    Gui::setBacklight(false);
     bmpLoadRow(stick.bmpFile, stick.step, &leds[0]);
     FastLED.show();
     ++stick.step;
@@ -114,6 +115,7 @@ void loop()
     break;
 
   case StickState::CREATIVE:
+    Gui::setBacklight(false);
     animate();
     ++stick.step;
     delay(stick.delayMs);
