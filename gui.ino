@@ -624,14 +624,14 @@ void Gui::init()
     const uint16_t tickLen          = 4;
     const uint16_t thumbControlSize = 12;
     {
-      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_BRIGHTNESS, Page::CONFIG1, 10, 60,
-                           140, 50, "Helligkeit", &fonts[Font::TEXT],
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_BRIGHTNESS, Page::CONFIG1, 10, 50,
+                           120, 50, "Helligkeit", &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CONFIG1_SLIDER_BRIGHTNESS, Page::CONFIG1, &sliderBrightness,
-        (gslc_tsRect){ 140, 70, slideWidth, slideHeight }, 0, 10, 2,
+        (gslc_tsRect){ 130, 60, slideWidth, slideHeight }, 0, 10, 2,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -641,18 +641,18 @@ void Gui::init()
 
       static char text[] = " 20%";
       gslc_ElemCreateTxt(&gui, CONFIG1_INFO_BRIGHTNESS, Page::CONFIG1,
-                         (gslc_tsRect){ 280, 60, 20, 40 }, &text[0],
+                         (gslc_tsRect){ 270, 60, 20, 30 }, &text[0],
                          sizeof(text), Font::TEXT);
     }
     {
-      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_SPEED, Page::CONFIG1, 10, 100,
-                           140, 50, "Geschwindigkeit", &fonts[Font::TEXT],
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_SPEED, Page::CONFIG1, 10, 80, 120,
+                           50, "Geschwindigkeit", &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CONFIG1_SLIDER_SPEED, Page::CONFIG1, &sliderSpeed,
-        (gslc_tsRect){ 140, 110, slideWidth, slideHeight }, 0, 10, 10,
+        (gslc_tsRect){ 130, 90, slideWidth, slideHeight }, 0, 10, 10,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -662,18 +662,18 @@ void Gui::init()
 
       static char text[] = "100%";
       gslc_ElemCreateTxt(&gui, CONFIG1_INFO_SPEED, Page::CONFIG1,
-                         (gslc_tsRect){ 280, 100, 20, 40 }, &text[0],
+                         (gslc_tsRect){ 270, 90, 20, 30 }, &text[0],
                          sizeof(text), Font::TEXT);
     }
     {
-      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_COUNTDOWN, Page::CONFIG1, 10, 140,
-                           140, 50, "Countdown", &fonts[Font::TEXT],
+      gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_COUNTDOWN, Page::CONFIG1, 10, 110,
+                           120, 50, "Countdown", &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CONFIG1_SLIDER_COUNTDOWN, Page::CONFIG1, &sliderCountdown,
-        (gslc_tsRect){ 140, 150, slideWidth, slideHeight }, 0, 5, 2,
+        (gslc_tsRect){ 130, 120, slideWidth, slideHeight }, 0, 5, 2,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -683,18 +683,18 @@ void Gui::init()
 
       static char text[] = "2 Sek";
       gslc_ElemCreateTxt(&gui, CONFIG1_INFO_COUNTDOWN, Page::CONFIG1,
-                         (gslc_tsRect){ 280, 140, 20, 40 }, &text[0],
+                         (gslc_tsRect){ 270, 120, 20, 30 }, &text[0],
                          sizeof(text), Font::TEXT);
     }
     {
       gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_REPETITIONS, Page::CONFIG1, 10,
-                           180, 140, 50, "Wiederholungen", &fonts[Font::TEXT],
+                           140, 120, 50, "Wiederholungen", &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CONFIG1_SLIDER_REPETITIONS, Page::CONFIG1, &sliderRepetitions,
-        (gslc_tsRect){ 140, 190, slideWidth, slideHeight }, 1, 5, 1,
+        (gslc_tsRect){ 130, 150, slideWidth, slideHeight }, 1, 5, 1,
         thumbControlSize, false);
       gslc_ElemSetCol(&gui, slider, GSLC_COL_WHITE, GSLC_COL_BLACK,
                       GSLC_COL_BLACK);
@@ -704,7 +704,7 @@ void Gui::init()
 
       static char text[] = "1 x";
       gslc_ElemCreateTxt(&gui, CONFIG1_INFO_REPETITIONS, Page::CONFIG1,
-                         (gslc_tsRect){ 280, 140, 20, 40 }, &text[0],
+                         (gslc_tsRect){ 270, 150, 20, 30 }, &text[0],
                          sizeof(text), Font::TEXT);
     }
   }
