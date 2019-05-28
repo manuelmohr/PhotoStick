@@ -467,9 +467,11 @@ void Gui::init()
     if (endsWith(n, ".BMP")) {
       Serial.println(entry.name());
       strcpy(filenames[i], entry.name());
+      const uint8_t   row = i % 5;
+      const uint8_t   col = i / 5;
       gslc_tsElemRef *btn = gslc_ElemCreateBtnTxt(
         &gui, Elem::PLAY1_BUTTON_FILE1 + i, Page::PLAY1,
-        (gslc_tsRect){ 30, 70 + i * 30, 80, 20 }, filenames[i],
+        (gslc_tsRect){ 30 + 90 * col, 70 + row * 30, 80, 20 }, filenames[i],
         sizeof(filenames[i]), Font::TEXT, &buttonClicked);
       ++i;
     }
