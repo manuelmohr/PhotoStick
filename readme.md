@@ -1,3 +1,17 @@
+# What is this?
+- The photo stick is a DIY project to build an LED-based light-painting device
+- Using long exposure times, the photo stick allows you to project arbitrary images into the air
+- The images are BMP files loaded from a microSD card
+- The photo stick provides comfortable touchscreen-based navigation and configuration
+- The project requires very basic soldering skills
+- The total material cost is around 150€ (but you might already have some required parts)
+- The photo stick is a DIY clone of http://www.thepixelstick.com/
+
+# Example shots
+![](resources/spider1.jpg)
+![](resources/spider2.jpg)
+![](resources/fire.jpg)
+
 # Material
 - 1x Arduino Mega or compatible
     - Example: https://www.amazon.de/Mikrocontroller-ATmega2560-ATMEGA16U2-USB-Kabel-Kompatibel/dp/B01MA5BLQI/
@@ -41,9 +55,7 @@
     - This enables backlight toggling from software
     - https://learn.adafruit.com/adafruit-2-8-tft-touch-shield-v2/backlight-touch-irq#
 - Solder the two LED strips into one
-    - TODO
-- Solder LED data wire to data pin 2
-    - TODO
+- Solder LED data wire to data pin 2 of Arduino
 - Connect LED shield to Arduino
 - Flash software
 
@@ -53,4 +65,15 @@
 - Save as BMP
 
 # Finished assembly
-![GitHub Logo](resources/assembly.jpg)
+Assembly alternative with integrated battery:
+![](resources/assembly.jpg)
+
+More compact assembly with external battery:
+![](resources/assembly2.jpg)
+![](resources/assembly3.jpg)
+![](resources/assembly4.jpg)
+![](resources/assembly5.jpg)
+
+User interface:
+![](resources/menu1.jpg)
+![](resources/menu2.jpg)
