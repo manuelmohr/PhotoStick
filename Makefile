@@ -1,12 +1,12 @@
 ARDUINO ?= ~/Programs/arduino-1.8.12/arduino
 PORT ?= /dev/ttyACM0
 
-all: Pixelstick.ino
+all: Photostick.ino
 	$(ARDUINO) --verify $<
 
 # -Wl,-Map=output.map
-debug: Pixelstick.ino
+debug: Photostick.ino
 	$(ARDUINO) --verbose-build --preserve-temp-files --verify $<
 
-upload: Pixelstick.ino
+upload: Photostick.ino
 	$(ARDUINO) --upload $< --port $(PORT)

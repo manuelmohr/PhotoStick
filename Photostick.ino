@@ -46,7 +46,7 @@ void initSdCard()
 void setup()
 {
   Serial.begin(9600);
-  Serial.println(F("Pixelstick\n"));
+  Serial.println(F("Photostick\n"));
 
   initSdCard();
 
