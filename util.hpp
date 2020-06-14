@@ -21,6 +21,10 @@
 
 #define BMP_WIDTH NUM_LEDS
 
+// Define this to flip the display.
+// Comment out to keep default orientation.
+#define FLIP_DISPLAY
+
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
 enum Animation

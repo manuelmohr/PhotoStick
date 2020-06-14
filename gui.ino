@@ -388,9 +388,11 @@ void Gui::init()
     panic(F("failed to initialize GUI"));
   }
 
+#ifdef FLIP_DISPLAY
   if (!gslc_GuiRotate(&gui, 3)) {
     panic(F("failed to rotate GUI"));
   }
+#endif
 
   if (!gslc_FontAdd(&gui, Font::TEXT, GSLC_FONTREF_PTR, nullptr, 1)) {
     panic(F("failed to add text font"));
