@@ -385,18 +385,18 @@ void Gui::init()
 
   if (!gslc_Init(&gui, &driver, &pages[0], Page::MAX_PAGES, &fonts[0],
                  Font::MAX_FONTS)) {
-    panic(F("failed1"));
+    panic(F("failed to initialize GUI"));
   }
 
   if (!gslc_GuiRotate(&gui, 3)) {
-    panic(F("failed2"));
+    panic(F("failed to rotate GUI"));
   }
 
   if (!gslc_FontAdd(&gui, Font::TEXT, GSLC_FONTREF_PTR, nullptr, 1)) {
-    panic(F("failed3"));
+    panic(F("failed to add text font"));
   }
   if (!gslc_FontAdd(&gui, Font::TITLE, GSLC_FONTREF_PTR, nullptr, 3)) {
-    panic(F("failed4"));
+    panic(F("failed to add title font"));
   }
 
   {
