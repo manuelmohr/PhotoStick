@@ -25,6 +25,9 @@
 // Comment out to keep default orientation.
 #define FLIP_DISPLAY
 
+// Language to use
+#define LANGUAGE_GERMAN
+
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
 enum Animation

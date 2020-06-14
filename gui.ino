@@ -2,6 +2,7 @@
 #include "GUIslice_ex.h"
 #include "bmp.hpp"
 #include "gui.hpp"
+#include "i18n.hpp"
 #include "util.hpp"
 
 using namespace Gui;
@@ -437,23 +438,23 @@ void Gui::init()
   }
 #define TMP_COL2 (gslc_tsColor){ 128, 128, 240 }
   gslc_ElemCreateTxt_P(&gui, MAIN_TITLE1, Page::MAIN, 2, 2, 320, 50,
-                       "Pixelstick", &fonts[Font::TITLE], TMP_COL1,
+                       STR_PROJECT_NAME, &fonts[Font::TITLE], TMP_COL1,
                        GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                        false, false);
   gslc_ElemCreateTxt_P(&gui, MAIN_TITLE2, Page::MAIN, 0, 0, 320, 50,
-                       "Pixelstick", &fonts[Font::TITLE], TMP_COL2,
+                       STR_PROJECT_NAME, &fonts[Font::TITLE], TMP_COL2,
                        GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                        false, false);
 
   gslc_ElemCreateBox_P(&gui, MAIN_BOX, Page::MAIN, 10, 50, 300, 180,
                        GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL, NULL);
   gslc_ElemCreateBtnTxt_P(&gui, MAIN_BUTTON_PLAY, Page::MAIN, 20, 120, 100, 50,
-                          "Bild", &fonts[Font::TITLE], GSLC_COL_WHITE,
+                          STR_IMAGE, &fonts[Font::TITLE], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
   gslc_ElemCreateBtnTxt_P(&gui, MAIN_BUTTON_CREATIVE, Page::MAIN, 160, 120, 100,
-                          50, "Kreativ", &fonts[Font::TITLE], GSLC_COL_WHITE,
+                          50, STR_CREATIVE, &fonts[Font::TITLE], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
@@ -464,20 +465,20 @@ void Gui::init()
    */
   gslc_ElemCreateBox_P(&gui, PLAY1_BOX, Page::PLAY1, 10, 50, 300, 180,
                        GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL, NULL);
-  gslc_ElemCreateTxt_P(&gui, PLAY1_TITLE1, Page::PLAY1, 2, 2, 320, 50, "Bild",
-                       &fonts[Font::TITLE], TMP_COL1, GSLC_COL_BLACK,
+  gslc_ElemCreateTxt_P(&gui, PLAY1_TITLE1, Page::PLAY1, 2, 2, 320, 50,
+                       STR_IMAGE, &fonts[Font::TITLE], TMP_COL1, GSLC_COL_BLACK,
                        GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
-  gslc_ElemCreateTxt_P(&gui, PLAY1_TITLE2, Page::PLAY1, 0, 0, 320, 50, "Bild",
-                       &fonts[Font::TITLE], TMP_COL2, GSLC_COL_BLACK,
+  gslc_ElemCreateTxt_P(&gui, PLAY1_TITLE2, Page::PLAY1, 0, 0, 320, 50,
+                       STR_IMAGE, &fonts[Font::TITLE], TMP_COL2, GSLC_COL_BLACK,
                        GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
 
   gslc_ElemCreateBtnTxt_P(&gui, PLAY1_BUTTON_BACK, Page::PLAY1, 20, 20, 50, 30,
-                          "Zurueck", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          STR_BACK, &fonts[Font::TEXT], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
   gslc_ElemCreateBtnTxt_P(&gui, PLAY1_BUTTON_FORWARD, Page::PLAY1, 260, 20, 50,
-                          30, "Weiter", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          30, STR_FORWARD, &fonts[Font::TEXT], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
@@ -515,20 +516,20 @@ void Gui::init()
                          GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL,
                          NULL);
     gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE1, Page::CREATIVE1, 2, 2, 320, 50,
-                         "Kreativ", &fonts[Font::TITLE], TMP_COL1,
+                         STR_CREATIVE, &fonts[Font::TITLE], TMP_COL1,
                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                          false, false);
     gslc_ElemCreateTxt_P(&gui, CREATIVE1_TITLE2, Page::CREATIVE1, 0, 0, 320, 50,
-                         "Kreativ", &fonts[Font::TITLE], TMP_COL2,
+                         STR_CREATIVE, &fonts[Font::TITLE], TMP_COL2,
                          GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                          false, false);
     gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_BACK, Page::CREATIVE1, 20,
-                            20, 50, 30, "Zurueck", &fonts[Font::TEXT],
+                            20, 50, 30, STR_BACK, &fonts[Font::TEXT],
                             GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                             GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                             false, false, &buttonClicked, nullptr);
     gslc_ElemCreateBtnTxt_P(&gui, CREATIVE1_BUTTON_GO, Page::CREATIVE1, 200,
-                            200, 50, 30, "START", &fonts[Font::TEXT],
+                            200, 50, 30, STR_START, &fonts[Font::TEXT],
                             GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                             GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
                             false, false, &buttonClicked, nullptr);
@@ -586,9 +587,9 @@ void Gui::init()
                       GSLC_COL_WHITE);
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_LIGHT_LABEL, Page::CREATIVE1,
-                           230, 70, 50, 20, "Leuchten 1 Sek",
-                           &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
-                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+                           230, 70, 50, 20, STR_LIGHT_1_SEC, &fonts[Font::TEXT],
+                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
+                           GSLC_ALIGN_MID_MID, false, false);
     }
     {
       gslc_tsElemRef *checkbox = gslc_ElemXCheckboxCreate(
@@ -599,7 +600,7 @@ void Gui::init()
                       GSLC_COL_WHITE);
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_BLINK_LABEL, Page::CREATIVE1,
-                           230, 100, 50, 20, "Blinken 1 Sek",
+                           230, 100, 50, 20, STR_BLINK_1_SEC,
                            &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
                            GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
     }
@@ -612,7 +613,7 @@ void Gui::init()
                       GSLC_COL_WHITE);
       gslc_ElemSetGroup(&gui, checkbox, 1);
       gslc_ElemCreateTxt_P(&gui, CREATIVE1_PATTERN_MARQUEE_LABEL,
-                           Page::CREATIVE1, 230, 130, 50, 20, "Laufband",
+                           Page::CREATIVE1, 230, 130, 50, 20, STR_MARQUEE,
                            &fonts[Font::TEXT], GSLC_COL_WHITE, GSLC_COL_BLACK,
                            GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
     }
@@ -624,18 +625,20 @@ void Gui::init()
   gslc_ElemCreateBox_P(&gui, CONFIG1_BOX, Page::CONFIG1, 10, 50, 300, 180,
                        GSLC_COL_WHITE, GSLC_COL_BLACK, true, true, NULL, NULL);
   gslc_ElemCreateTxt_P(&gui, CONFIG1_TITLE1, Page::CONFIG1, 2, 2, 320, 50,
-                       "Konfig", &fonts[Font::TITLE], TMP_COL1, GSLC_COL_BLACK,
-                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+                       STR_CONFIG, &fonts[Font::TITLE], TMP_COL1,
+                       GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                       false, false);
   gslc_ElemCreateTxt_P(&gui, CONFIG1_TITLE2, Page::CONFIG1, 0, 0, 320, 50,
-                       "Konfig", &fonts[Font::TITLE], TMP_COL2, GSLC_COL_BLACK,
-                       GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false);
+                       STR_CONFIG, &fonts[Font::TITLE], TMP_COL2,
+                       GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                       false, false);
   gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_BACK, Page::CONFIG1, 20, 20, 50,
-                          30, "Zurueck", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          30, STR_BACK, &fonts[Font::TEXT], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
   gslc_ElemCreateBtnTxt_P(&gui, CONFIG1_BUTTON_GO, Page::CONFIG1, 260, 20, 50,
-                          30, "START!", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          30, STR_START, &fonts[Font::TEXT], GSLC_COL_WHITE,
                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_COL_BLACK,
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
@@ -647,7 +650,7 @@ void Gui::init()
     const uint16_t thumbControlSize = 12;
     {
       gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_BRIGHTNESS, Page::CONFIG1, 10, 50,
-                           120, 50, "Helligkeit", &fonts[Font::TEXT],
+                           120, 50, STR_BRIGHTNESS, &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
@@ -668,9 +671,9 @@ void Gui::init()
     }
     {
       gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_SPEED, Page::CONFIG1, 10, 80, 120,
-                           50, "Geschwindigkeit", &fonts[Font::TEXT],
-                           GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
-                           GSLC_ALIGN_MID_MID, false, false);
+                           50, STR_SPEED, &fonts[Font::TEXT], GSLC_COL_WHITE,
+                           GSLC_COL_BLACK, GSLC_COL_BLACK, GSLC_ALIGN_MID_MID,
+                           false, false);
 
       gslc_tsElemRef *slider = gslc_ElemXSliderCreate(
         &gui, CONFIG1_SLIDER_SPEED, Page::CONFIG1, &sliderSpeed,
@@ -689,7 +692,7 @@ void Gui::init()
     }
     {
       gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_COUNTDOWN, Page::CONFIG1, 10, 110,
-                           120, 50, "Countdown", &fonts[Font::TEXT],
+                           120, 50, STR_COUNTDOWN, &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
@@ -710,7 +713,7 @@ void Gui::init()
     }
     {
       gslc_ElemCreateTxt_P(&gui, CONFIG1_TEXT_REPETITIONS, Page::CONFIG1, 10,
-                           140, 120, 50, "Wiederholungen", &fonts[Font::TEXT],
+                           140, 120, 50, STR_REPETITIONS, &fonts[Font::TEXT],
                            GSLC_COL_WHITE, GSLC_COL_BLACK, GSLC_COL_BLACK,
                            GSLC_ALIGN_MID_MID, false, false);
 
