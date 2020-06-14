@@ -2,9 +2,11 @@
 #include "SD.h"
 #include "bmp.hpp"
 
+using namespace BMP;
+
 // These read 16- and 32-bit types from the SD card file.
 // BMP data is stored little-endian format.
-uint16_t bmpRead16(BMPFile &bmpFile)
+uint16_t BMP::read16(BMPFile &bmpFile)
 {
   File &   f      = bmpFile.file;
   uint16_t result = 0;
@@ -13,7 +15,7 @@ uint16_t bmpRead16(BMPFile &bmpFile)
   return result;
 }
 
-uint32_t bmpRead24(BMPFile &bmpFile)
+uint32_t BMP::read24(BMPFile &bmpFile)
 {
   File &   f      = bmpFile.file;
   uint32_t result = 0;
@@ -23,7 +25,7 @@ uint32_t bmpRead24(BMPFile &bmpFile)
   return result;
 }
 
-uint32_t bmpRead32(BMPFile &bmpFile)
+uint32_t BMP::read32(BMPFile &bmpFile)
 {
   File &   f      = bmpFile.file;
   uint32_t result = 0;
@@ -34,7 +36,7 @@ uint32_t bmpRead32(BMPFile &bmpFile)
   return result;
 }
 
-void bmpOpen(BMPFile &bmpFile, const char *filename)
+void BMP::open(BMPFile &bmpFile, const char *filename)
 {
   Serial.println();
   Serial.print(F("Loading image "));
@@ -46,25 +48,25 @@ void bmpOpen(BMPFile &bmpFile, const char *filename)
   }
 
   // Parse BMP header
-  if (bmpRead16(bmpFile) != 0x4D42) {
+  if (BMP::read16(bmpFile) != 0x4D42) {
     panic(F("Invalid header"));
   }
   Serial.print(F("File size: "));
-  Serial.println(bmpRead32(bmpFile));
-  (void)bmpRead32(bmpFile); // Ignore reserved word
-  bmpFile.imageOffset = bmpRead32(bmpFile);
+  Serial.println(BMP::read32(bmpFile));
+  (void)BMP::read32(bmpFile); // Ignore reserved word
+  bmpFile.imageOffset = BMP::read32(bmpFile);
   Serial.print(F("Image Offset: "));
   Serial.println(bmpFile.imageOffset, DEC);
 
   // Read BMP Info header
   Serial.print(F("Header size: "));
-  Serial.println(bmpRead32(bmpFile));
+  Serial.println(BMP::read32(bmpFile));
 
-  if (bmpRead32(bmpFile) != BMP_WIDTH) {
+  if (BMP::read32(bmpFile) != BMP_WIDTH) {
     panic(F("Width must be 288"));
   }
 
-  uint32_t height = bmpRead32(bmpFile);
+  uint32_t height = BMP::read32(bmpFile);
   boolean  flip   = true;
   if (height < 0) {
     // If height is negative, image is in top-down order.
@@ -75,14 +77,14 @@ void bmpOpen(BMPFile &bmpFile, const char *filename)
   bmpFile.height = height;
   bmpFile.flip   = flip;
 
-  if (bmpRead16(bmpFile) != 1) {
+  if (BMP::read16(bmpFile) != 1) {
     panic(F("Planes must be 1"));
   }
-  bmpFile.depth = bmpRead16(bmpFile);
+  bmpFile.depth = BMP::read16(bmpFile);
   if (bmpFile.depth != 16 && bmpFile.depth != 24 && bmpFile.depth != 32) {
     panic(F("Depth must be 16, 24, or 32"));
   }
-  const uint32_t comp = bmpRead32(bmpFile);
+  const uint32_t comp = BMP::read32(bmpFile);
   if (comp != 0 && comp != 3) {
     panic(F("Must be uncompressed"));
   }
@@ -97,7 +99,7 @@ void bmpOpen(BMPFile &bmpFile, const char *filename)
   Serial.println(rowSize);
 }
 
-void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
+void BMP::loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
 {
   const uint32_t rowSize = (BMP_WIDTH * bmpFile.depth / 8 + 3U) & ~3U;
 
@@ -121,7 +123,7 @@ void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
     uint8_t r, g, b;
 
     if (bmpFile.depth == 16) {
-      uint32_t c = bmpRead16(bmpFile);
+      uint32_t c = BMP::read16(bmpFile);
 
       r = (c & 0xF800U) >> 11;
       g = (c & 0x07E0U) >> 5;
@@ -131,13 +133,13 @@ void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
       g = (float(g) / ((1U << 6) - 1)) * 255.0f;
       b = (float(b) / ((1U << 5) - 1)) * 255.0f;
     } else if (bmpFile.depth == 24) {
-      uint32_t c = bmpRead24(bmpFile);
+      uint32_t c = BMP::read24(bmpFile);
 
       r = (c & 0xFF0000U) >> 16;
       g = (c & 0x00FF00U) >> 8;
       b = (c & 0x0000FFU) >> 0;
     } else {
-      uint32_t c = bmpRead32(bmpFile);
+      uint32_t c = BMP::read32(bmpFile);
 
       // Format is XRGB/ARGB.
       r = (c & 0x00FF0000U) >> 16;

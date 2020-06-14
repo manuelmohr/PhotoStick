@@ -6,6 +6,8 @@
 #include "util.hpp"
 #include <stdint.h>
 
+namespace BMP
+{
 struct BMPFile
 {
   File     file;
@@ -17,11 +19,12 @@ struct BMPFile
 
 // These read 16- and 32-bit types from the SD card file.
 // BMP data is stored little-endian, Arduino is little-endian too.
-uint16_t bmpRead16(BMPFile &bmpFile);
-uint32_t bmpRead24(BMPFile &bmpFile);
-uint32_t bmpRead32(BMPFile &bmpFile);
+uint16_t read16(BMPFile &bmpFile);
+uint32_t read24(BMPFile &bmpFile);
+uint32_t read32(BMPFile &bmpFile);
 
-void bmpOpen(BMPFile &bmpFile, const char *filename);
-void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds);
+void open(BMPFile &bmpFile, const char *filename);
+void loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds);
+}
 
 #endif

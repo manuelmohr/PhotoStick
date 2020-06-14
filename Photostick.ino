@@ -21,7 +21,7 @@ enum class StickState
 struct
 {
   StickState    state;
-  BMPFile       bmpFile;
+  BMP::BMPFile  bmpFile;
   uint16_t      step;
   uint16_t      maxStep;
   unsigned long startMs;
@@ -108,7 +108,7 @@ void loop()
 
   case StickState::IMAGE:
     Gui::setBacklight(false);
-    bmpLoadRow(stick.bmpFile, stick.step, &leds[0]);
+    BMP::loadRow(stick.bmpFile, stick.step, &leds[0]);
     FastLED.show();
     ++stick.step;
     delay(stick.delayMs);
@@ -133,7 +133,7 @@ void loop()
     if (Gui::readyToGo(cfg)) {
       if (cfg.fileToLoad != nullptr) {
         stick.nextState = StickState::IMAGE;
-        bmpOpen(stick.bmpFile, cfg.fileToLoad);
+        BMP::open(stick.bmpFile, cfg.fileToLoad);
         stick.maxStep = stick.bmpFile.height;
         // We can do 382 pixel rows in about 16 seconds.
         // Hence, we do about 23 rows per second and each row takes about 45ms.
