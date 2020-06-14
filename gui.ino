@@ -130,8 +130,10 @@ int16_t glscDebugOut(char ch)
   return 0;
 }
 
-void handleEventPageMain(void *gui, int id)
+void handleEventPageMain(void *pGui, int id)
 {
+  gslc_tsGui *gui = (gslc_tsGui *)pGui;
+
   switch (id) {
   case Elem::MAIN_BUTTON_PLAY:
     gslc_SetPageCur(gui, Page::PLAY1);
@@ -143,8 +145,11 @@ void handleEventPageMain(void *gui, int id)
   }
 }
 
-void handleEventPagePlay1(void *gui, int id, void *elemRef)
+void handleEventPagePlay1(void *pGui, int id, void *pElemRef)
 {
+  gslc_tsGui *    gui     = (gslc_tsGui *)pGui;
+  gslc_tsElemRef *elemRef = (gslc_tsElemRef *)pElemRef;
+
   switch (id) {
   case Elem::PLAY1_BUTTON_FILE1:
   case Elem::PLAY1_BUTTON_FILE2:
@@ -197,8 +202,10 @@ void handleEventPagePlay1(void *gui, int id, void *elemRef)
   }
 }
 
-void handleEventPageCreative1(void *gui, int id)
+void handleEventPageCreative1(void *pGui, int id)
 {
+  gslc_tsGui *gui = (gslc_tsGui *)pGui;
+
   switch (id) {
   case Elem::CREATIVE1_BUTTON_BACK:
     gslc_SetPageCur(gui, Page::MAIN);
@@ -231,8 +238,10 @@ void handleEventPageCreative1(void *gui, int id)
   }
 }
 
-void handleEventPageConfig1(void *gui, int id)
+void handleEventPageConfig1(void *pGui, int id)
 {
+  gslc_tsGui *gui = (gslc_tsGui *)pGui;
+
   switch (id) {
   case Elem::CONFIG1_BUTTON_BACK:
     gslc_SetPageCur(gui, lastPage);
@@ -253,9 +262,12 @@ void handleEventPageConfig1(void *gui, int id)
   }
 }
 
-bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
+bool buttonClicked(void *pGui, void *pElemRef, gslc_teTouch event, int16_t x,
                    int16_t y)
 {
+  gslc_tsGui *    gui     = (gslc_tsGui *)pGui;
+  gslc_tsElemRef *elemRef = (gslc_tsElemRef *)pElemRef;
+
   if (event != GSLC_TOUCH_UP_IN) {
     return false;
   }
@@ -284,25 +296,29 @@ bool buttonClicked(void *gui, void *elemRef, gslc_teTouch event, int16_t x,
 
 bool sliderChanged(void *pvGui, void *pvElemRef, int16_t nPos)
 {
+  if (nPos < 0 || nPos > 255) {
+    return false;
+  }
+
   gslc_tsGui *    gui     = (gslc_tsGui *)(pvGui);
   gslc_tsElemRef *elemRef = (gslc_tsElemRef *)(pvElemRef);
   gslc_tsElem *   elem    = elemRef->pElem;
   gslc_tsXSlider *slider  = (gslc_tsXSlider *)(elem->pXData);
 
-  static int16_t posSliderR = 255;
-  static int16_t posSliderG = 255;
-  static int16_t posSliderB = 255;
+  static uint8_t posSliderR = 255;
+  static uint8_t posSliderG = 255;
+  static uint8_t posSliderB = 255;
 
   // Fetch the new RGB component from the slider
   switch (elem->nId) {
   case Elem::CREATIVE1_SLIDER_R:
-    posSliderR = nPos;
+    posSliderR = (uint8_t)nPos;
     break;
   case Elem::CREATIVE1_SLIDER_G:
-    posSliderG = nPos;
+    posSliderG = (uint8_t)nPos;
     break;
   case Elem::CREATIVE1_SLIDER_B:
-    posSliderB = nPos;
+    posSliderB = (uint8_t)nPos;
     break;
   default:
     break;

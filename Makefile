@@ -1,4 +1,4 @@
-ARDUINO ?= ~/Programs/arduino-1.8.8/arduino
+ARDUINO ?= ~/Programs/arduino-1.8.12/arduino
 PORT ?= /dev/ttyACM0
 
 all: Pixelstick.ino
