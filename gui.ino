@@ -388,11 +388,15 @@ void Gui::init()
     panic(F("failed1"));
   }
 
-  if (!gslc_FontAdd(&gui, Font::TEXT, GSLC_FONTREF_PTR, nullptr, 1)) {
+  if (!gslc_GuiRotate(&gui, 3)) {
     panic(F("failed2"));
   }
-  if (!gslc_FontAdd(&gui, Font::TITLE, GSLC_FONTREF_PTR, nullptr, 3)) {
+
+  if (!gslc_FontAdd(&gui, Font::TEXT, GSLC_FONTREF_PTR, nullptr, 1)) {
     panic(F("failed3"));
+  }
+  if (!gslc_FontAdd(&gui, Font::TITLE, GSLC_FONTREF_PTR, nullptr, 3)) {
+    panic(F("failed4"));
   }
 
   {
