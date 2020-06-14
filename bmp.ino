@@ -1,37 +1,36 @@
-#include "bmp.hpp"
 #include "FastLED.h"
 #include "SD.h"
+#include "bmp.hpp"
 
 // These read 16- and 32-bit types from the SD card file.
-// BMP data is stored little-endian, Arduino is little-endian too.
+// BMP data is stored little-endian format.
 uint16_t bmpRead16(BMPFile &bmpFile)
 {
-  File &   f = bmpFile.file;
-  uint16_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read(); // MSB
+  File &   f      = bmpFile.file;
+  uint16_t result = 0;
+  result |= uint16_t(f.read()) << 0;
+  result |= uint16_t(f.read()) << 8;
   return result;
 }
 
 uint32_t bmpRead24(BMPFile &bmpFile)
 {
-  File &   f = bmpFile.file;
-  uint32_t result;
-  ((uint8_t *)&result)[0] = 0; // LSB
-  ((uint8_t *)&result)[1] = f.read();
-  ((uint8_t *)&result)[2] = f.read();
-  ((uint8_t *)&result)[3] = f.read(); // MSB
+  File &   f      = bmpFile.file;
+  uint32_t result = 0;
+  result |= uint32_t(f.read()) << 0;
+  result |= uint32_t(f.read()) << 8;
+  result |= uint32_t(f.read()) << 16;
   return result;
 }
 
 uint32_t bmpRead32(BMPFile &bmpFile)
 {
-  File &   f = bmpFile.file;
-  uint32_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read();
-  ((uint8_t *)&result)[2] = f.read();
-  ((uint8_t *)&result)[3] = f.read(); // MSB
+  File &   f      = bmpFile.file;
+  uint32_t result = 0;
+  result |= uint32_t(f.read()) << 0;
+  result |= uint32_t(f.read()) << 8;
+  result |= uint32_t(f.read()) << 16;
+  result |= uint32_t(f.read()) << 24;
   return result;
 }
 
@@ -68,6 +67,8 @@ void bmpOpen(BMPFile &bmpFile, const char *filename)
   uint32_t height = bmpRead32(bmpFile);
   boolean  flip   = true;
   if (height < 0) {
+    // If height is negative, image is in top-down order.
+    // This is not common but has been observed in the wild.
     height = -height;
     flip   = false;
   }
@@ -89,8 +90,6 @@ void bmpOpen(BMPFile &bmpFile, const char *filename)
   // BMP rows are padded (if needed) to 4-byte boundary
   const uint32_t rowSize = (BMP_WIDTH * bmpFile.depth / 8 + 3U) & ~3U;
 
-  // If bmpHeight is negative, image is in top-down order.
-  // This is not canon but has been observed in the wild.
   Serial.print(F("Image size: 288"));
   Serial.print('x');
   Serial.println(bmpFile.height);
@@ -124,8 +123,8 @@ void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
     if (bmpFile.depth == 16) {
       uint32_t c = bmpRead16(bmpFile);
 
-      r = (c & 0x7C00U) >> 10;
-      g = (c & 0x03E0U) >> 5;
+      r = (c & 0xF800U) >> 11;
+      g = (c & 0x07E0U) >> 5;
       b = (c & 0x001FU) >> 0;
 
       r = (float(r) / ((1U << 5) - 1)) * 255.0f;
@@ -140,9 +139,10 @@ void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
     } else {
       uint32_t c = bmpRead32(bmpFile);
 
-      r = (c & 0xFF000000U) >> 24;
-      g = (c & 0x00FF0000U) >> 16;
-      b = (c & 0x0000FF00U) >> 8;
+      // Format is XRGB/ARGB.
+      r = (c & 0x00FF0000U) >> 16;
+      g = (c & 0x0000FF00U) >> 8;
+      b = (c & 0x000000FFU) >> 0;
     }
 
     leds[i] = CRGB(r, g, b);
@@ -159,3 +159,5 @@ void bmpLoadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
 #endif
   }
 }
+
+// vim: et ts=2
