@@ -106,7 +106,7 @@ void BMP::loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
 
   switch (bmpFile.depth) {
   case 16: {
-    // TODO: Keep this?  It's massively slow due to the float stuff.
+    // TODO: Keep this?  It's massively slower due to the conversion.
     const int bytesPerPixel = 2;
     uint8_t * buf           = (uint8_t *)leds;
     const int numRead       = file.read(&buf[0], bytesPerPixel * NUM_LEDS);
@@ -121,9 +121,9 @@ void BMP::loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
       uint8_t g = (c & 0x07E0U) >> 5;
       uint8_t b = (c & 0x001FU) >> 0;
 
-      r = (float(r) / ((1U << 5) - 1)) * 255.0f;
-      g = (float(g) / ((1U << 6) - 1)) * 255.0f;
-      b = (float(b) / ((1U << 5) - 1)) * 255.0f;
+      r = ((uint16_t(r) * 255) / ((1U << 5) - 1));
+      g = ((uint16_t(g) * 255) / ((1U << 6) - 1));
+      b = ((uint16_t(b) * 255) / ((1U << 5) - 1));
 
       leds[i] = CRGB(r, g, b);
     }
