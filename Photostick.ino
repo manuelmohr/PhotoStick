@@ -53,6 +53,7 @@ struct Stats
     minMs = ULONG_MAX;
     maxMs = 0;
     sumMs = 0;
+    num   = 0;
   }
 
   void update(unsigned long tookMs)
