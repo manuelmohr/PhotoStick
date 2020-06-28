@@ -199,11 +199,11 @@ void loop()
         BMP::open(stick.sd, stick.bmpFile, cfg.fileToLoad);
         stick.maxStep = stick.bmpFile.height;
         // TODO: Update this after optimization with SdFat.
-        // We can do 382 pixel rows in about 16 seconds.
-        // Hence, we do about 23 rows per second and each row takes about 45ms.
-        // The 45ms are divided between showing on LEDs and loading from SD:
-        //   Show: min=8 max=11 avg=8.96
-        //   Load: min=31 max=44 avg=36.24
+        // We can do 848 pixel rows in about 11 seconds.
+        // Hence, we do about 77 rows per second and each row takes about 13ms.
+        // The 14ms are divided between showing on LEDs and loading from SD:
+        //   Show: min=8 max=11 avg=8.94
+        //   Load: min=2 max=11 avg=5.24
         //
         // We consider 1 row per second as "0% speed", so we know the following:
         // - For 100% speed (i.e., speed == 10), delay = 0

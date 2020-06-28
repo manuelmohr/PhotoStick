@@ -15,16 +15,6 @@ uint16_t BMP::read16(BMPFile &bmpFile)
   return result;
 }
 
-uint32_t BMP::read24(BMPFile &bmpFile)
-{
-  SdFile & f      = bmpFile.file;
-  uint32_t result = 0;
-  result |= uint32_t(f.read()) << 0;
-  result |= uint32_t(f.read()) << 8;
-  result |= uint32_t(f.read()) << 16;
-  return result;
-}
-
 uint32_t BMP::read32(BMPFile &bmpFile)
 {
   SdFile & f      = bmpFile.file;
@@ -114,51 +104,96 @@ void BMP::loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
     file.seekSet(pos);
   }
 
-#if 0
-  Serial.print("pos: ");
-  Serial.println(pos, DEC);
-#endif
-  for (int16_t i = 0; i < NUM_LEDS; ++i) {
-    uint8_t r, g, b;
+  switch (bmpFile.depth) {
+  case 16: {
+    // TODO: Keep this?  It's massively slow due to the float stuff.
+    const int bytesPerPixel = 2;
+    uint8_t * buf           = (uint8_t *)leds;
+    const int numRead       = file.read(&buf[0], bytesPerPixel * NUM_LEDS);
 
-    if (bmpFile.depth == 16) {
-      uint32_t c = BMP::read16(bmpFile);
+    for (int16_t i = NUM_LEDS - 1; i >= 0; --i) {
+      // BMP data is stored little-endian format.
+      uint16_t c = 0;
+      c |= buf[i * bytesPerPixel + 0] << 0;
+      c |= buf[i * bytesPerPixel + 1] << 8;
 
-      r = (c & 0xF800U) >> 11;
-      g = (c & 0x07E0U) >> 5;
-      b = (c & 0x001FU) >> 0;
+      uint8_t r = (c & 0xF800U) >> 11;
+      uint8_t g = (c & 0x07E0U) >> 5;
+      uint8_t b = (c & 0x001FU) >> 0;
 
       r = (float(r) / ((1U << 5) - 1)) * 255.0f;
       g = (float(g) / ((1U << 6) - 1)) * 255.0f;
       b = (float(b) / ((1U << 5) - 1)) * 255.0f;
-    } else if (bmpFile.depth == 24) {
-      uint32_t c = BMP::read24(bmpFile);
 
-      r = (c & 0xFF0000U) >> 16;
-      g = (c & 0x00FF00U) >> 8;
-      b = (c & 0x0000FFU) >> 0;
-    } else {
-      uint32_t c = BMP::read32(bmpFile);
-
-      // Format is XRGB/ARGB.
-      r = (c & 0x00FF0000U) >> 16;
-      g = (c & 0x0000FF00U) >> 8;
-      b = (c & 0x000000FFU) >> 0;
+      leds[i] = CRGB(r, g, b);
     }
 
-    leds[i] = CRGB(r, g, b);
+    break;
+  }
+  case 24: {
+    // TODO: This is basically as fast as the version below; merge them?
+    const int bytesPerPixel = 3;
+    uint8_t * buf           = (uint8_t *)leds;
+    const int numRead       = file.read(&buf[0], bytesPerPixel * NUM_LEDS);
+
+    for (int16_t i = NUM_LEDS - 1; i >= 0; --i) {
+      // Format is RGB:       RR GG BB
+      // In little endian:    0  1  2
+      //                      BB GG RR
+      const uint8_t r = buf[i * bytesPerPixel + 2];
+      const uint8_t g = buf[i * bytesPerPixel + 1];
+      const uint8_t b = buf[i * bytesPerPixel + 0];
+
+      leds[i] = CRGB(r, g, b);
+    }
+
+    break;
+  }
+  case 32: {
+    // In this case, unfortunately we cannot use the "leds" array as our
+    // buffer as it is too small.
+    // We work around this problem by using a local buffer.
+    const int bytesPerPixel      = 4;
+    const int pixelsPerIteration = 16; // Decrease if RAM is tight
+    const int bufSize            = pixelsPerIteration * bytesPerPixel;
+
+    int16_t pos = 0;
+    do {
+      uint8_t   buf[bufSize];
+      const int numBytesRead = file.read(&buf[0], sizeof(buf));
+
+      const int numPixelsRead = numBytesRead / bytesPerPixel;
+
+      for (int i = 0; i < numPixelsRead; ++i) {
+        // Format is XRGB/ARGB: AA RR GG BB
+        // In little endian:    0  1  2  3
+        //                      BB GG RR AA
+        const uint8_t r = buf[i * bytesPerPixel + 2];
+        const uint8_t g = buf[i * bytesPerPixel + 1];
+        const uint8_t b = buf[i * bytesPerPixel + 0];
+
+        leds[pos + i] = CRGB(r, g, b);
+      }
+
+      pos += numPixelsRead;
+    } while (pos < NUM_LEDS);
+
+    break;
+  }
+  }
 
 #if 0
+  for (int16_t i = 0; i < NUM_LEDS; ++i) {
     Serial.print(i, DEC);
-    Serial.print(": r=");
+    Serial.print(F(": r="));
     Serial.print(leds[i].r, HEX);
-    Serial.print(" g=");
+    Serial.print(F(" g="));
     Serial.print(leds[i].g, HEX);
-    Serial.print(" b=");
+    Serial.print(F(" b="));
     Serial.print(leds[i].b, HEX);
-    Serial.println("");
-#endif
+    Serial.println(F(""));
   }
+#endif
 }
 
 // vim: et ts=2
