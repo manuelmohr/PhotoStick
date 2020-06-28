@@ -28,6 +28,9 @@
 // Language to use
 #define LANGUAGE_GERMAN
 
+// Enable or disable some timing debug information on serial output
+#define ENABLE_TIMING
+
 __attribute__((noreturn)) void panic(const __FlashStringHelper *pgstr);
 
 enum Animation

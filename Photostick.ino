@@ -4,6 +4,7 @@
 #include "gui.hpp"
 #include "util.hpp"
 
+#include <limits.h>
 #include <string.h>
 
 namespace
@@ -33,6 +34,65 @@ struct
   uint8_t       delayMs;
 } stick;
 }
+
+#ifdef ENABLE_TIMING
+namespace Timing
+{
+struct Stats
+{
+  unsigned long minMs;
+  unsigned long maxMs;
+  unsigned long sumMs;
+  unsigned long num;
+
+  Stats()
+  {
+    minMs = ULONG_MAX;
+    maxMs = 0;
+    sumMs = 0;
+  }
+
+  void update(unsigned long tookMs)
+  {
+    if (tookMs < minMs)
+      minMs = tookMs;
+    if (tookMs > maxMs)
+      maxMs = tookMs;
+    sumMs += tookMs;
+
+    ++num;
+  }
+
+  double getAverage() const
+  {
+    return ((double)sumMs) / num;
+  }
+
+  void println() const
+  {
+    Serial.print("min=");
+    Serial.print(minMs);
+    Serial.print(" max=");
+    Serial.print(maxMs);
+    Serial.print(" avg=");
+    Serial.println(getAverage());
+  }
+};
+
+Stats statLoad;
+Stats statShow;
+}
+
+#define TIME(statPtr, op)                   \
+  do {                                      \
+    const unsigned long startMs = millis(); \
+    (op);                                   \
+    const unsigned long stopMs = millis();  \
+    (statPtr)->update(stopMs - startMs);    \
+  } while (false)
+#else
+#define TIME(statPtr, op) (op)
+#endif
 
 void initSdCard()
 {
@@ -108,8 +168,8 @@ void loop()
 
   case StickState::IMAGE:
     Gui::setBacklight(false);
-    BMP::loadRow(stick.bmpFile, stick.step, &leds[0]);
-    FastLED.show();
+    TIME(&Timing::statLoad, BMP::loadRow(stick.bmpFile, stick.step, &leds[0]));
+    TIME(&Timing::statShow, FastLED.show());
     ++stick.step;
     delay(stick.delayMs);
     break;
@@ -137,6 +197,10 @@ void loop()
         stick.maxStep = stick.bmpFile.height;
         // We can do 382 pixel rows in about 16 seconds.
         // Hence, we do about 23 rows per second and each row takes about 45ms.
+        // The 45ms are divided between showing on LEDs and loading from SD:
+        //   Show: min=8 max=11 avg=8.96
+        //   Load: min=31 max=44 avg=36.24
+        //
         // We consider 1 row per second as "0% speed", so we know the following:
         // - For 100% speed (i.e., speed == 10), delay = 0
         // - For   0% speed (i.e., speed ==  0), delay = 955
@@ -173,6 +237,15 @@ void loop()
       stick.state     = StickState::PAUSE;
       stick.nextState = StickState::GUI;
       stick.startMs   = millis();
+
+#ifdef ENABLE_TIMING
+      Serial.print("Show: ");
+      Timing::statShow.println();
+      Timing::statShow = Timing::Stats();
+      Serial.print("Load: ");
+      Timing::statLoad.println();
+      Timing::statLoad = Timing::Stats();
+#endif
     }
     break;
 
