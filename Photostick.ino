@@ -242,6 +242,8 @@ void loop()
       stick.nextState = StickState::GUI;
       stick.startMs   = millis();
 
+      stick.bmpFile.file.close();
+
 #ifdef ENABLE_TIMING
       Serial.print(F("Show: "));
       Timing::statShow.println();
