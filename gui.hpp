@@ -4,11 +4,12 @@
 #include "GUIslice.h"
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
+#include "SdFat.h"
 #include "util.hpp"
 
 namespace Gui
 {
-void init();
+void init(SdFat &sd);
 void update();
 void setBacklight(bool on);
 bool readyToGo(StickConfig &cfg);

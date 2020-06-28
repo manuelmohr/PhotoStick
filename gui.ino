@@ -1,5 +1,6 @@
 #include "GUIslice_drv.h"
 #include "GUIslice_ex.h"
+#include "SdFat.h"
 #include "bmp.hpp"
 #include "gui.hpp"
 #include "i18n.hpp"
@@ -364,7 +365,7 @@ bool sliderChangedConfig(void *pvGui, void *pvElemRef, int16_t nPos)
   return true;
 }
 
-bool endsWith(const char *str, const char *e)
+bool endsWithIgnoreCase(const char *str, const char *e)
 {
   const size_t strLen = strlen(str);
   const size_t eLen   = strlen(e);
@@ -374,11 +375,11 @@ bool endsWith(const char *str, const char *e)
   }
 
   const size_t off = strLen - eLen;
-  return strcmp(str + off, e) == 0;
+  return strcasecmp(str + off, e) == 0;
 }
 } // end anonymous namespace
 
-void Gui::init()
+void Gui::init(SdFat &sd)
 {
   gslc_InitDebug(&glscDebugOut);
 
@@ -483,13 +484,18 @@ void Gui::init()
                           GSLC_COL_BLACK, GSLC_ALIGN_MID_MID, false, false,
                           &buttonClicked, nullptr);
 
-  uint8_t i    = 0;
-  File    root = SD.open("/");
-  while (File entry = root.openNextFile()) {
-    const char *n = entry.name();
-    if (endsWith(n, ".BMP")) {
-      Serial.println(entry.name());
-      strcpy(filenames[i], entry.name());
+  uint8_t i = 0;
+  SdFile  root;
+  if (!root.open("/")) {
+    panic(F("Could not open SD root"));
+  }
+  SdFile entry;
+  while (entry.openNext(&root, O_RDONLY)) {
+    char name[16];
+    entry.getName(&name[0], sizeof(name));
+    if (endsWithIgnoreCase(&name[0], ".bmp")) {
+      Serial.println(name);
+      strcpy(filenames[i], name);
       const uint8_t   row = i % 5;
       const uint8_t   col = i / 5;
       gslc_tsElemRef *btn = gslc_ElemCreateBtnTxt(
@@ -498,6 +504,7 @@ void Gui::init()
         sizeof(filenames[i]), Font::TEXT, &buttonClicked);
       ++i;
     }
+    entry.close();
 
     if (i == (Elem::PLAY1_BUTTON_FILE12 - Elem::PLAY1_BUTTON_FILE1)) {
       break;

@@ -1,5 +1,5 @@
 #include "FastLED.h"
-#include "SD.h"
+#include "SdFat.h"
 #include "bmp.hpp"
 
 using namespace BMP;
@@ -8,7 +8,7 @@ using namespace BMP;
 // BMP data is stored little-endian format.
 uint16_t BMP::read16(BMPFile &bmpFile)
 {
-  File &   f      = bmpFile.file;
+  SdFile & f      = bmpFile.file;
   uint16_t result = 0;
   result |= uint16_t(f.read()) << 0;
   result |= uint16_t(f.read()) << 8;
@@ -17,7 +17,7 @@ uint16_t BMP::read16(BMPFile &bmpFile)
 
 uint32_t BMP::read24(BMPFile &bmpFile)
 {
-  File &   f      = bmpFile.file;
+  SdFile & f      = bmpFile.file;
   uint32_t result = 0;
   result |= uint32_t(f.read()) << 0;
   result |= uint32_t(f.read()) << 8;
@@ -27,7 +27,7 @@ uint32_t BMP::read24(BMPFile &bmpFile)
 
 uint32_t BMP::read32(BMPFile &bmpFile)
 {
-  File &   f      = bmpFile.file;
+  SdFile & f      = bmpFile.file;
   uint32_t result = 0;
   result |= uint32_t(f.read()) << 0;
   result |= uint32_t(f.read()) << 8;
@@ -36,14 +36,13 @@ uint32_t BMP::read32(BMPFile &bmpFile)
   return result;
 }
 
-void BMP::open(BMPFile &bmpFile, const char *filename)
+void BMP::open(SdFat &sd, BMPFile &bmpFile, const char *filename)
 {
   Serial.println();
   Serial.print(F("Loading image "));
   Serial.println(filename);
 
-  bmpFile.file = SD.open(filename);
-  if (!bmpFile.file) {
+  if (!bmpFile.file.open(filename, O_RDONLY)) {
     panic(F("File not found"));
   }
 
@@ -110,9 +109,9 @@ void BMP::loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds)
     pos = bmpFile.imageOffset + row * rowSize;
   }
 
-  File &file = bmpFile.file;
-  if (file.position() != pos) {
-    file.seek(pos);
+  SdFile &file = bmpFile.file;
+  if (file.curPosition() != pos) {
+    file.seekSet(pos);
   }
 
 #if 0

@@ -2,7 +2,7 @@
 #define BMP_HPP
 
 #include "FastLED.h"
-#include "SD.h"
+#include "SdFat.h"
 #include "util.hpp"
 #include <stdint.h>
 
@@ -10,7 +10,7 @@ namespace BMP
 {
 struct BMPFile
 {
-  File     file;
+  SdFile   file;
   boolean  flip;
   uint8_t  depth;
   uint32_t height;
@@ -23,7 +23,7 @@ uint16_t read16(BMPFile &bmpFile);
 uint32_t read24(BMPFile &bmpFile);
 uint32_t read32(BMPFile &bmpFile);
 
-void open(BMPFile &bmpFile, const char *filename);
+void open(SdFat &sd, BMPFile &bmpFile, const char *filename);
 void loadRow(BMPFile &bmpFile, uint32_t row, CRGB *leds);
 }
 

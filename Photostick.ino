@@ -1,8 +1,10 @@
 #include "FastLED.h"
-#include "SD.h"
+#include "SdFat.h"
 #include "bmp.hpp"
 #include "gui.hpp"
+#include "sdios.h"
 #include "util.hpp"
+#include <SPI.h>
 
 #include <limits.h>
 #include <string.h>
@@ -32,6 +34,7 @@ struct
   Animation     animation;
   uint8_t       repetitions;
   uint8_t       delayMs;
+  SdFat         sd;
 } stick;
 }
 
@@ -70,11 +73,11 @@ struct Stats
 
   void println() const
   {
-    Serial.print("min=");
+    Serial.print(F("min="));
     Serial.print(minMs);
-    Serial.print(" max=");
+    Serial.print(F(" max="));
     Serial.print(maxMs);
-    Serial.print(" avg=");
+    Serial.print(F(" avg="));
     Serial.println(getAverage());
   }
 };
@@ -97,7 +100,7 @@ Stats statShow;
 void initSdCard()
 {
   Serial.print(F("Initializing SD card..."));
-  if (!SD.begin(SD_CS)) {
+  if (!stick.sd.begin(SD_CS, SD_SCK_MHZ(50))) {
     panic(F("failed!"));
   }
   Serial.println(F("OK!"));
@@ -110,7 +113,7 @@ void setup()
 
   initSdCard();
 
-  Gui::init();
+  Gui::init(stick.sd);
   stick.state = StickState::GUI;
 
   FastLED.setCorrection(TypicalLEDStrip);
@@ -193,8 +196,9 @@ void loop()
     if (Gui::readyToGo(cfg)) {
       if (cfg.fileToLoad != nullptr) {
         stick.nextState = StickState::IMAGE;
-        BMP::open(stick.bmpFile, cfg.fileToLoad);
+        BMP::open(stick.sd, stick.bmpFile, cfg.fileToLoad);
         stick.maxStep = stick.bmpFile.height;
+        // TODO: Update this after optimization with SdFat.
         // We can do 382 pixel rows in about 16 seconds.
         // Hence, we do about 23 rows per second and each row takes about 45ms.
         // The 45ms are divided between showing on LEDs and loading from SD:
@@ -239,10 +243,10 @@ void loop()
       stick.startMs   = millis();
 
 #ifdef ENABLE_TIMING
-      Serial.print("Show: ");
+      Serial.print(F("Show: "));
       Timing::statShow.println();
       Timing::statShow = Timing::Stats();
-      Serial.print("Load: ");
+      Serial.print(F("Load: "));
       Timing::statLoad.println();
       Timing::statLoad = Timing::Stats();
 #endif
