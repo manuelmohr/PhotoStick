@@ -750,23 +750,12 @@ void Gui::init(SdFat &sd)
   /* Init */
   gslc_SetPageCur(&gui, Page::MAIN);
 
-  /* Enable backlight */
-  pinMode(BACKLIGHT_PIN, OUTPUT);
-  setBacklight(true);
-
   Serial.println(F("successful"));
 }
 
 void Gui::update()
 {
   gslc_Update(&gui);
-}
-
-// See:
-// https://learn.adafruit.com/adafruit-2-8-tft-touch-shield-v2/backlight-touch-irq
-void Gui::setBacklight(bool on)
-{
-  digitalWrite(BACKLIGHT_PIN, on ? HIGH : LOW);
 }
 
 bool Gui::readyToGo(StickConfig &cfg)

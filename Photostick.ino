@@ -98,6 +98,13 @@ Stats statShow;
 #define TIME(statPtr, op) (op)
 #endif
 
+// See:
+// https://learn.adafruit.com/adafruit-2-8-tft-touch-shield-v2/backlight-touch-irq
+void setBacklight(bool on)
+{
+  digitalWrite(BACKLIGHT_PIN, on ? HIGH : LOW);
+}
+
 void initSdCard()
 {
   Serial.print(F("Initializing SD card..."));
@@ -115,6 +122,11 @@ void setup()
   initSdCard();
 
   Gui::init(stick.sd);
+
+  /* Enable backlight */
+  pinMode(BACKLIGHT_PIN, OUTPUT);
+  setBacklight(true);
+
   stick.state = StickState::GUI;
 
   FastLED.setCorrection(TypicalLEDStrip);
@@ -171,7 +183,7 @@ void loop()
     break;
 
   case StickState::IMAGE:
-    Gui::setBacklight(false);
+    setBacklight(false);
     TIME(&Timing::statLoad, BMP::loadRow(stick.bmpFile, stick.step, &leds[0]));
     TIME(&Timing::statShow, FastLED.show());
     ++stick.step;
@@ -179,14 +191,14 @@ void loop()
     break;
 
   case StickState::CREATIVE:
-    Gui::setBacklight(false);
+    setBacklight(false);
     animate();
     ++stick.step;
     delay(stick.delayMs);
     break;
 
   case StickState::PAUSE:
-    Gui::setBacklight(false);
+    setBacklight(false);
     break;
   }
 
@@ -260,7 +272,7 @@ void loop()
     if (millis() - stick.startMs >= stick.durationMs) {
       stick.startMs = millis();
       stick.state   = stick.nextState;
-      Gui::setBacklight(true);
+      setBacklight(true);
     }
     break;
   }

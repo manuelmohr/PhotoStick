@@ -11,7 +11,6 @@ namespace Gui
 {
 void init(SdFat &sd);
 void update();
-void setBacklight(bool on);
 bool readyToGo(StickConfig &cfg);
 }
 
