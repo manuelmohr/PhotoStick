@@ -4,7 +4,7 @@
 
 using namespace BMP;
 
-// These read 16- and 32-bit types from the SD card file.
+// These read 16- and 32-bit values from the SD card file.
 // BMP data is stored little-endian format.
 uint16_t BMP::read16(BMPFile &bmpFile)
 {

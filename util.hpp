@@ -19,6 +19,7 @@
 // How many leds in your strip?
 #define NUM_LEDS 288
 
+// We save our BMPs turned by 90 degrees.
 #define BMP_WIDTH NUM_LEDS
 
 // Define this to flip the display.
