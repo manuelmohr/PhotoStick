@@ -4,9 +4,11 @@
 
 using namespace BMP;
 
+namespace
+{
 // These read 16- and 32-bit values from the SD card file.
 // BMP data is stored little-endian format.
-uint16_t BMP::read16(BMPFile &bmpFile)
+uint16_t read16(BMPFile &bmpFile)
 {
   SdFile & f      = bmpFile.file;
   uint16_t result = 0;
@@ -15,7 +17,7 @@ uint16_t BMP::read16(BMPFile &bmpFile)
   return result;
 }
 
-uint32_t BMP::read32(BMPFile &bmpFile)
+uint32_t read32(BMPFile &bmpFile)
 {
   SdFile & f      = bmpFile.file;
   uint32_t result = 0;
@@ -24,6 +26,7 @@ uint32_t BMP::read32(BMPFile &bmpFile)
   result |= uint32_t(f.read()) << 16;
   result |= uint32_t(f.read()) << 24;
   return result;
+}
 }
 
 void BMP::open(SdFat &sd, BMPFile &bmpFile, const char *filename)
@@ -37,25 +40,25 @@ void BMP::open(SdFat &sd, BMPFile &bmpFile, const char *filename)
   }
 
   // Parse BMP header
-  if (BMP::read16(bmpFile) != 0x4D42) {
+  if (read16(bmpFile) != 0x4D42) {
     panic(F("Invalid header"));
   }
   Serial.print(F("File size: "));
-  Serial.println(BMP::read32(bmpFile));
-  (void)BMP::read32(bmpFile); // Ignore reserved word
-  bmpFile.imageOffset = BMP::read32(bmpFile);
+  Serial.println(read32(bmpFile));
+  (void)read32(bmpFile); // Ignore reserved word
+  bmpFile.imageOffset = read32(bmpFile);
   Serial.print(F("Image Offset: "));
   Serial.println(bmpFile.imageOffset, DEC);
 
   // Read BMP Info header
   Serial.print(F("Header size: "));
-  Serial.println(BMP::read32(bmpFile));
+  Serial.println(read32(bmpFile));
 
-  if (BMP::read32(bmpFile) != BMP_WIDTH) {
+  if (read32(bmpFile) != BMP_WIDTH) {
     panic(F("Width must be 288"));
   }
 
-  uint32_t height = BMP::read32(bmpFile);
+  uint32_t height = read32(bmpFile);
   boolean  flip   = true;
   if (height < 0) {
     // If height is negative, image is in top-down order.
@@ -66,14 +69,14 @@ void BMP::open(SdFat &sd, BMPFile &bmpFile, const char *filename)
   bmpFile.height = height;
   bmpFile.flip   = flip;
 
-  if (BMP::read16(bmpFile) != 1) {
+  if (read16(bmpFile) != 1) {
     panic(F("Planes must be 1"));
   }
-  bmpFile.depth = BMP::read16(bmpFile);
+  bmpFile.depth = read16(bmpFile);
   if (bmpFile.depth != 16 && bmpFile.depth != 24 && bmpFile.depth != 32) {
     panic(F("Depth must be 16, 24, or 32"));
   }
-  const uint32_t comp = BMP::read32(bmpFile);
+  const uint32_t comp = read32(bmpFile);
   if (comp != 0 && comp != 3) {
     panic(F("Must be uncompressed"));
   }
