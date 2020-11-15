@@ -1,6 +1,7 @@
 #include "FastLED.h"
 #include "SdFat.h"
 #include "bmp.hpp"
+#include "config.hpp"
 #include "gui.hpp"
 #include "sdios.h"
 #include "util.hpp"

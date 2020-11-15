@@ -2,6 +2,7 @@
 #include "GUIslice_ex.h"
 #include "SdFat.h"
 #include "bmp.hpp"
+#include "config.hpp"
 #include "gui.hpp"
 #include "i18n.hpp"
 #include "util.hpp"
