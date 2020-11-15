@@ -33,6 +33,8 @@ enum Elem
   PLAY1_TITLE2,
   PLAY1_BUTTON_BACK,
   PLAY1_BUTTON_FORWARD,
+  PLAY1_BUTTON_PREV_FILESET,
+  PLAY1_BUTTON_NEXT_FILESET,
   PLAY1_BUTTON_FILE1,
   PLAY1_BUTTON_FILE2,
   PLAY1_BUTTON_FILE3,
@@ -100,6 +102,13 @@ enum Font
 
 namespace
 {
+const uint8_t MAX_FILES           = 10;
+const uint8_t NUM_FILES_COLUMNS   = 2;
+const uint8_t MAX_FILENAME_LENGTH = 16;
+} // end anonymous namespace constants
+
+namespace
+{
 gslc_tsGui       gui;
 gslc_tsDriver    driver;
 gslc_tsPage      pages[Page::MAX_PAGES];
@@ -116,10 +125,12 @@ gslc_tsXSlider   sliderBrightness;
 gslc_tsXSlider   sliderSpeed;
 gslc_tsXSlider   sliderCountdown;
 gslc_tsXSlider   sliderRepetitions;
-char             filenames[10][16];
-int              selectedFile = -1;
-Page             lastPage     = MAX_PAGES;
-bool             isReadyToGo  = false;
+char             filenames[MAX_FILES][MAX_FILENAME_LENGTH];
+int              selectedFile   = -1;
+Page             lastPage       = MAX_PAGES;
+bool             isReadyToGo    = false;
+size_t           numBmpFiles    = 0;
+size_t           currentFileSet = 0;
 StickConfig      stickConfig;
 } // end anonymous namespace variables
 
@@ -129,6 +140,107 @@ int16_t glscDebugOut(char ch)
 {
   Serial.write(ch);
   return 0;
+}
+
+void setButtonSelection(gslc_tsGui *gui, gslc_tsElemRef *elemRef, bool doSelect)
+{
+  if (doSelect) {
+    gslc_ElemSetCol(gui, elemRef, GSLC_COL_WHITE, GSLC_COL_WHITE,
+                    GSLC_COL_BLUE_DK4);
+    gslc_ElemSetTxtCol(gui, elemRef, GSLC_COL_BLUE_DK4);
+  } else {
+    /* Deselect */
+    gslc_ElemSetCol(gui, elemRef, GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4,
+                    GSLC_COL_WHITE);
+    gslc_ElemSetTxtCol(gui, elemRef, GSLC_COL_WHITE);
+  }
+}
+
+bool endsWithIgnoreCase(const char *str, const char *e)
+{
+  const size_t strLen = strlen(str);
+  const size_t eLen   = strlen(e);
+
+  if (strLen < eLen) {
+    return false;
+  }
+
+  const size_t off = strLen - eLen;
+  return strcasecmp(str + off, e) == 0;
+}
+
+void setFilenameButtons(uint8_t numFileSet)
+{
+  const size_t numFileSets = (numBmpFiles + MAX_FILES - 1) / MAX_FILES;
+  if (numFileSet >= numFileSets) {
+    return;
+  }
+
+  SdFile root;
+  if (!root.open("/")) {
+    panic(F("Could not open SD root"));
+  }
+
+  SdFile entry;
+
+  /* Skip the first numFilesToSkip .bmp files. */
+  const size_t numFilesToSkip  = numFileSet * MAX_FILES;
+  size_t       numSkippedFiles = 0;
+  while (numSkippedFiles < numFilesToSkip && entry.openNext(&root, O_RDONLY)) {
+    char name[MAX_FILENAME_LENGTH];
+    entry.getName(&name[0], sizeof(name));
+    if (endsWithIgnoreCase(&name[0], ".bmp")) {
+      ++numSkippedFiles;
+    }
+    entry.close();
+  }
+
+  /* Set the button labels to the file names. */
+  const size_t numFilesToShow = min(numBmpFiles - numSkippedFiles, MAX_FILES);
+  size_t       numFiles       = 0;
+  while (numFiles < numFilesToShow && entry.openNext(&root, O_RDONLY)) {
+    char name[MAX_FILENAME_LENGTH];
+    entry.getName(&name[0], sizeof(name));
+    if (endsWithIgnoreCase(&name[0], ".bmp")) {
+      gslc_tsElemRef *button = &elemRefs[Elem::PLAY1_BUTTON_FILE1 + numFiles];
+      gslc_ElemSetTxtStr(&gui, button, name);
+      gslc_ElemSetVisible(&gui, button, true);
+      setButtonSelection(&gui, button, false);
+
+      ++numFiles;
+    }
+    entry.close();
+  }
+  root.close();
+
+  /* Make remaining buttons invisible. */
+  for (size_t i = numFiles; i < MAX_FILES; ++i) {
+    gslc_tsElemRef *button = &elemRefs[Elem::PLAY1_BUTTON_FILE1 + i];
+    gslc_ElemSetVisible(&gui, button, false);
+    setButtonSelection(&gui, button, false);
+  }
+}
+
+size_t getNumBmpFiles()
+{
+  SdFile root;
+  if (!root.open("/")) {
+    panic(F("Could not open SD root"));
+  }
+
+  size_t numBmpFiles = 0;
+  SdFile entry;
+  while (entry.openNext(&root, O_RDONLY)) {
+    char name[MAX_FILENAME_LENGTH];
+    entry.getName(&name[0], sizeof(name));
+    if (endsWithIgnoreCase(&name[0], ".bmp")) {
+      ++numBmpFiles;
+    }
+    entry.close();
+  }
+  root.close();
+
+  return numBmpFiles;
 }
 
 void handleEventPageMain(void *pGui, int id)
@@ -164,24 +276,18 @@ void handleEventPagePlay1(void *pGui, int id, void *pElemRef)
   case Elem::PLAY1_BUTTON_FILE10: {
     const int fileId = id - Elem::PLAY1_BUTTON_FILE1;
     if (selectedFile != -1) {
-      /* Deselect */
-      gslc_ElemSetCol(gui, &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                      GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4, GSLC_COL_WHITE);
-      gslc_ElemSetTxtCol(gui,
-                         &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                         GSLC_COL_WHITE);
+      /* Deselect old */
+      setButtonSelection(
+        gui, &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile], false);
     }
 
     if (selectedFile == fileId) {
       selectedFile = -1;
     } else {
-      /* Select */
+      /* Select new */
       selectedFile = fileId;
-      gslc_ElemSetCol(gui, elemRef, GSLC_COL_WHITE, GSLC_COL_WHITE,
-                      GSLC_COL_BLUE_DK4);
-      gslc_ElemSetTxtCol(gui,
-                         &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile],
-                         GSLC_COL_BLUE_DK4);
+      setButtonSelection(
+        gui, &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile], true);
     }
     break;
   }
@@ -193,11 +299,27 @@ void handleEventPagePlay1(void *pGui, int id, void *pElemRef)
 
   case Elem::PLAY1_BUTTON_FORWARD:
     if (selectedFile != -1) {
-      stickConfig.fileToLoad = filenames[selectedFile];
+      gslc_tsElemRef *button =
+        &elemRefs[Elem::PLAY1_BUTTON_FILE1 + selectedFile];
+      stickConfig.fileToLoad = gslc_ElemGetTxtStr(gui, button);
       lastPage               = Page::PLAY1;
       gslc_SetPageCur(gui, Page::CONFIG1);
     }
     break;
+
+  case Elem::PLAY1_BUTTON_PREV_FILESET:
+    if (currentFileSet > 0) {
+      setFilenameButtons(--currentFileSet);
+    }
+    break;
+
+  case Elem::PLAY1_BUTTON_NEXT_FILESET: {
+    const size_t numFileSets = (numBmpFiles + MAX_FILES - 1) / MAX_FILES;
+    if (currentFileSet + 1 < numFileSets) {
+      setFilenameButtons(++currentFileSet);
+    }
+    break;
+  }
   }
 }
 
@@ -361,19 +483,6 @@ bool sliderChangedConfig(void *pvGui, void *pvElemRef, int16_t nPos)
 
   return true;
 }
-
-bool endsWithIgnoreCase(const char *str, const char *e)
-{
-  const size_t strLen = strlen(str);
-  const size_t eLen   = strlen(e);
-
-  if (strLen < eLen) {
-    return false;
-  }
-
-  const size_t off = strLen - eLen;
-  return strcasecmp(str + off, e) == 0;
-}
 } // end anonymous namespace
 
 void Gui::init(SdFat &sd)
@@ -487,33 +596,36 @@ void Gui::init(SdFat &sd)
                           GSLC_ALIGN_MID_MID, true, true, &buttonClicked,
                           nullptr);
 
-  uint8_t i = 0;
-  SdFile  root;
-  if (!root.open("/")) {
-    panic(F("Could not open SD root"));
-  }
-  SdFile entry;
-  while (entry.openNext(&root, O_RDONLY)) {
-    char name[16];
-    entry.getName(&name[0], sizeof(name));
-    if (endsWithIgnoreCase(&name[0], ".bmp")) {
-      Serial.println(name);
-      strcpy(filenames[i], name);
-      const uint8_t   row = i % 5;
-      const uint8_t   col = i / 5;
-      gslc_tsElemRef *btn = gslc_ElemCreateBtnTxt(
-        &gui, Elem::PLAY1_BUTTON_FILE1 + i, Page::PLAY1,
-        (gslc_tsRect){ 50 + 120 * col, 70 + row * 30, 100, 20 }, filenames[i],
-        sizeof(filenames[i]), Font::TEXT, &buttonClicked);
-      ++i;
-    }
-    entry.close();
+  gslc_ElemCreateBtnTxt_P(&gui, PLAY1_BUTTON_PREV_FILESET, Page::PLAY1, 15, 120,
+                          20, 40, "<-", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4,
+                          GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK1,
+                          GSLC_ALIGN_MID_MID, true, true, &buttonClicked,
+                          nullptr);
+  gslc_ElemCreateBtnTxt_P(&gui, PLAY1_BUTTON_NEXT_FILESET, Page::PLAY1, 285,
+                          120, 20, 40, "->", &fonts[Font::TEXT], GSLC_COL_WHITE,
+                          GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK4,
+                          GSLC_COL_BLUE_DK2, GSLC_COL_BLUE_DK1,
+                          GSLC_ALIGN_MID_MID, true, true, &buttonClicked,
+                          nullptr);
 
-    if (i == (Elem::PLAY1_BUTTON_FILE10 - Elem::PLAY1_BUTTON_FILE1)) {
-      break;
-    }
+  /* Create the buttons for file selection, but hide them for now. */
+  for (uint8_t i = 0; i < MAX_FILES; ++i) {
+    const uint8_t filesPerColumn = MAX_FILES / NUM_FILES_COLUMNS;
+    const uint8_t row            = i % filesPerColumn;
+    const uint8_t col            = i / filesPerColumn;
+
+    filenames[i][0]     = '\0';
+    gslc_tsElemRef *btn = gslc_ElemCreateBtnTxt(
+      &gui, Elem::PLAY1_BUTTON_FILE1 + i, Page::PLAY1,
+      (gslc_tsRect){ 50 + 120 * col, 70 + row * 30, 100, 20 }, &filenames[i][0],
+      MAX_FILENAME_LENGTH, Font::TEXT, &buttonClicked);
+    gslc_ElemSetVisible(&gui, btn, false);
   }
-  root.close();
+
+  numBmpFiles    = getNumBmpFiles();
+  currentFileSet = 0;
+  setFilenameButtons(currentFileSet);
 
   /*
    * CREATIVE1 PAGE
