@@ -178,10 +178,15 @@ void loop()
 {
   // Update logic
   switch (stick.state) {
-  case StickState::GUI:
-    Gui::update();
-    break;
+  case StickState::GUI: {
+    const int  scaledBatteryVoltage = analogRead(BATTERY_VOLTAGE_PIN);
+    const bool isBatteryVoltageLow =
+      (scaledBatteryVoltage > 0 &&
+       scaledBatteryVoltage <= BATTERY_VOLTAGE_THRESHOLD);
 
+    Gui::update(isBatteryVoltageLow);
+    break;
+  }
   case StickState::IMAGE:
     setBacklight(false);
     TIME(&Timing::statLoad, BMP::loadRow(stick.bmpFile, stick.step, &leds[0]));

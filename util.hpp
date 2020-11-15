@@ -22,6 +22,12 @@
 // We save our BMPs turned by 90 degrees.
 #define BMP_WIDTH NUM_LEDS
 
+// Which analog pin monitors battery voltage?
+#define BATTERY_VOLTAGE_PIN A0
+
+// We assume below 4.0 V is critical and assume a resolution of 10 bits.
+#define BATTERY_VOLTAGE_THRESHOLD ((4 * 1024) / 5)
+
 // Define this to flip the display.
 // Comment out to keep default orientation.
 #define FLIP_DISPLAY

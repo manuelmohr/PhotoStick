@@ -10,7 +10,7 @@
 namespace Gui
 {
 void init(SdFat &sd);
-void update();
+void update(bool enableWarning);
 bool readyToGo(StickConfig &cfg);
 }
 

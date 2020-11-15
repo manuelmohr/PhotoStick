@@ -753,8 +753,12 @@ void Gui::init(SdFat &sd)
   Serial.println(F("successful"));
 }
 
-void Gui::update()
+void Gui::update(bool enableWarning)
 {
+  if (enableWarning) {
+    gslc_SetBkgndColor(&gui, GSLC_COL_RED_LT3);
+  }
+
   gslc_Update(&gui);
 }
 
