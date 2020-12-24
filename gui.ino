@@ -757,7 +757,7 @@ void Gui::init(SdFat &sd)
 void Gui::update(bool enableWarning)
 {
   if (enableWarning) {
-    gslc_SetBkgndColor(&gui, GSLC_COL_RED_LT3);
+    gslc_SetBkgndColor(&gui, GSLC_COL_RED_DK1);
   }
 
   gslc_Update(&gui);

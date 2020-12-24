@@ -20,6 +20,7 @@
 #define BMP_WIDTH NUM_LEDS
 
 // Which analog pin monitors battery voltage?
+// Undefine if no voltage monitoring is desired.
 #define BATTERY_VOLTAGE_PIN A0
 
 // We assume below 4.0 V is critical and assume a resolution of 10 bits.

@@ -180,10 +180,14 @@ void loop()
   // Update logic
   switch (stick.state) {
   case StickState::GUI: {
+#ifdef BATTERY_VOLTAGE_PIN
     const int  scaledBatteryVoltage = analogRead(BATTERY_VOLTAGE_PIN);
     const bool isBatteryVoltageLow =
       (scaledBatteryVoltage > 0 &&
        scaledBatteryVoltage <= BATTERY_VOLTAGE_THRESHOLD);
+#else
+    const bool isBatteryVoltageLow = false;
+#endif
 
     Gui::update(isBatteryVoltageLow);
     break;
