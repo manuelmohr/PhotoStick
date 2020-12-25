@@ -219,6 +219,15 @@ void setFilenameButtons(uint8_t numFileSet)
     gslc_ElemSetVisible(&gui, button, false);
     setButtonSelection(&gui, button, false);
   }
+
+  /* Handle first and last file sets to hide non-sensical buttons. */
+  gslc_tsElemRef *prevSetButton = &elemRefs[Elem::PLAY1_BUTTON_PREV_FILESET];
+  gslc_ElemSetVisible(&gui, prevSetButton, numFileSet != 0);
+  gslc_tsElemRef *nextSetButton = &elemRefs[Elem::PLAY1_BUTTON_NEXT_FILESET];
+  gslc_ElemSetVisible(&gui, nextSetButton, numFileSet + 1 != numFileSets);
+
+  /* Reset selected file. */
+  selectedFile = -1;
 }
 
 size_t getNumBmpFiles()
