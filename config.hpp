@@ -21,7 +21,7 @@
 
 // Which analog pin monitors battery voltage?
 // Undefine if no voltage monitoring is desired.
-#define BATTERY_VOLTAGE_PIN A0
+// #define BATTERY_VOLTAGE_PIN A0
 
 // We assume below 4.0 V is critical and assume a resolution of 10 bits.
 #define BATTERY_VOLTAGE_THRESHOLD ((4 * 1024) / 5)
