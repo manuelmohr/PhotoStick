@@ -48,7 +48,7 @@ void BMP::open(SdFat &sd, BMPFile &bmpFile, const char *filename)
   (void)read32(bmpFile); // Ignore reserved word
   bmpFile.imageOffset = read32(bmpFile);
   Serial.print(F("Image Offset: "));
-  Serial.println(bmpFile.imageOffset, DEC);
+  Serial.println(bmpFile.imageOffset);
 
   // Read BMP Info header
   Serial.print(F("Header size: "));

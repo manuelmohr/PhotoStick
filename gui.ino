@@ -98,14 +98,14 @@ enum Font
   TITLE,
   MAX_FONTS,
 };
-} // end anonymous namespace enums
+}
 
 namespace
 {
 const uint8_t MAX_FILES           = 10;
 const uint8_t NUM_FILES_COLUMNS   = 2;
 const uint8_t MAX_FILENAME_LENGTH = 16;
-} // end anonymous namespace constants
+}
 
 namespace
 {
@@ -132,7 +132,7 @@ bool             isReadyToGo    = false;
 size_t           numBmpFiles    = 0;
 size_t           currentFileSet = 0;
 StickConfig      stickConfig;
-} // end anonymous namespace variables
+}
 
 namespace
 {
