@@ -1,7 +1,7 @@
 #ifndef I18N_HPP
 #define I18N_HPP
 
-#include "util.hpp"
+#include "config.hpp"
 
 #ifdef LANGUAGE_GERMAN
 /* German */
