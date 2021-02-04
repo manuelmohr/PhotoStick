@@ -35,7 +35,7 @@ struct
   CRGB          animationColor; // In CREATIVE mode: color for animation
   Animation     animation;      // In CREATIVE mode: animation type
   uint8_t       repetitions;    // In IMAGE/CREATIVE: number of repetitions
-  uint8_t       delayMs;        // In IMAGE/CREATIVE: delay if speed < 100%
+  uint16_t      delayMs;        // In IMAGE/CREATIVE: delay if speed < 100%
   SdFat         sd;
 } stick;
 
