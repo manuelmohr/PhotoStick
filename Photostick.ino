@@ -4,6 +4,7 @@
 #include "config.hpp"
 #include "gui.hpp"
 #include "sdios.h"
+#include "timing.hpp"
 #include "util.hpp"
 #include <SPI.h>
 
@@ -37,67 +38,12 @@ struct
   uint8_t       delayMs;
   SdFat         sd;
 } stick;
-}
 
 #ifdef ENABLE_TIMING
-namespace Timing
-{
-struct Stats
-{
-  unsigned long minMs;
-  unsigned long maxMs;
-  unsigned long sumMs;
-  unsigned long num;
-
-  Stats()
-  {
-    minMs = ULONG_MAX;
-    maxMs = 0;
-    sumMs = 0;
-    num   = 0;
-  }
-
-  void update(unsigned long tookMs)
-  {
-    if (tookMs < minMs)
-      minMs = tookMs;
-    if (tookMs > maxMs)
-      maxMs = tookMs;
-    sumMs += tookMs;
-
-    ++num;
-  }
-
-  double getAverage() const
-  {
-    return ((double)sumMs) / num;
-  }
-
-  void println() const
-  {
-    Serial.print(F("min="));
-    Serial.print(minMs);
-    Serial.print(F(" max="));
-    Serial.print(maxMs);
-    Serial.print(F(" avg="));
-    Serial.println(getAverage());
-  }
-};
-
-Stats statLoad;
-Stats statShow;
-}
-
-#define TIME(statPtr, op)                   \
-  do {                                      \
-    const unsigned long startMs = millis(); \
-    (op);                                   \
-    const unsigned long stopMs = millis();  \
-    (statPtr)->update(stopMs - startMs);    \
-  } while (false)
-#else
-#define TIME(statPtr, op) (op)
+Timing::Stats statLoad;
+Timing::Stats statShow;
 #endif
+}
 
 // See:
 // https://learn.adafruit.com/adafruit-2-8-tft-touch-shield-v2/backlight-touch-irq
@@ -194,8 +140,8 @@ void loop()
   }
   case StickState::IMAGE:
     setBacklight(false);
-    TIME(&Timing::statLoad, BMP::loadRow(stick.bmpFile, stick.step, &leds[0]));
-    TIME(&Timing::statShow, FastLED.show());
+    TIME(&statLoad, BMP::loadRow(stick.bmpFile, stick.step, &leds[0]));
+    TIME(&statShow, FastLED.show());
     ++stick.step;
     delay(stick.delayMs);
     break;
@@ -269,11 +215,11 @@ void loop()
 
 #ifdef ENABLE_TIMING
       Serial.print(F("Show: "));
-      Timing::statShow.println();
-      Timing::statShow = Timing::Stats();
+      statShow.println();
+      statShow = Timing::Stats();
       Serial.print(F("Load: "));
-      Timing::statLoad.println();
-      Timing::statLoad = Timing::Stats();
+      statLoad.println();
+      statLoad = Timing::Stats();
 #endif
     }
     break;
