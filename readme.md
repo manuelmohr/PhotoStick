@@ -12,6 +12,21 @@
 ![](resources/fire.jpg)
 ![](resources/spider2.jpg)
 
+# Using this software
+- Install the [Arduino IDE](https://www.arduino.cc/en/software)
+- Clone the repository
+- Install the following libraries via Arduino's library manager:
+  - `FastLED`
+  - `SdFat`
+  - `Adafruit_GFX_Library`, `Adafruit_ILI9341`, `Adafruit_STMPE610`, `Adafruit_TouchScreen`
+  - `GUISlice`
+- *IMPORTANT*: Modify GUISlice's configuration in the following way:
+  - Open `Arduino/libraries/GUIslice/src/GUIslice_config.h`
+  - Remove the comment in front of the line `#include "../configs/ard-shld-adafruit_28_res.h"`
+- Open `Photostick.ino` in the Arduino IDE
+- Compile, load, and use
+- Optional: Adapt settings `config.hpp`, especially if you used non-standard pins
+
 # Material
 - 1x Arduino Mega or compatible ([Example](https://www.amazon.de/Mikrocontroller-ATmega2560-ATMEGA16U2-USB-Kabel-Kompatibel/dp/B01MA5BLQI/))
 - 1x 2.8" TFT Touch Shield for Arduino ([Example](https://www.exp-tech.de/displays/tft/4764/adafruit-2.8-tft-touch-shield-fuer-arduino-v2))
