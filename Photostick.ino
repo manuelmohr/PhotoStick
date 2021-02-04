@@ -25,17 +25,17 @@ enum class StickState
 
 struct
 {
-  StickState    state;
-  BMP::BMPFile  bmpFile;
-  uint16_t      step;
-  uint16_t      maxStep;
-  unsigned long startMs;
-  unsigned long durationMs;
-  StickState    nextState;
-  CRGB          animationColor;
-  Animation     animation;
-  uint8_t       repetitions;
-  uint8_t       delayMs;
+  StickState    state;   // Holds current state
+  BMP::BMPFile  bmpFile; // In IMAGE mode: Holds info on BMP file
+  uint16_t      step;    // Counts activations of loop()
+  uint16_t      maxStep; // After maxStep loop() activations: transition state
+  unsigned long startMs; // In PAUSE mode: used determine current pause length
+  unsigned long durationMs;     // In PAUSE Mode: bounds pause length
+  StickState    nextState;      // State to transition to after PAUSE
+  CRGB          animationColor; // In CREATIVE mode: color for animation
+  Animation     animation;      // In CREATIVE mode: animation type
+  uint8_t       repetitions;    // In IMAGE/CREATIVE: number of repetitions
+  uint8_t       delayMs;        // In IMAGE/CREATIVE: delay if speed < 100%
   SdFat         sd;
 } stick;
 
