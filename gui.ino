@@ -20,6 +20,7 @@ enum Page
   MAX_PAGES,
 };
 
+// Important: order must match creation order in init().
 enum Elem
 {
   MAIN_BOX,
