@@ -16,9 +16,6 @@
 // How many leds in your strip?
 #define NUM_LEDS 288
 
-// We save our BMPs turned by 90 degrees.
-#define BMP_WIDTH NUM_LEDS
-
 // Which analog pin monitors battery voltage?
 // Undefine if no voltage monitoring is desired.
 // #define BATTERY_VOLTAGE_PIN A0

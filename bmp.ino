@@ -1,6 +1,10 @@
 #include "FastLED.h"
 #include "SdFat.h"
 #include "bmp.hpp"
+#include "config.hpp"
+
+// We save our BMPs turned by 90 degrees.
+#define BMP_WIDTH NUM_LEDS
 
 using namespace BMP;
 
