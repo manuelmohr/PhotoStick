@@ -30,6 +30,12 @@
 // Language to use
 #define LANGUAGE_GERMAN
 
+// Maximum artificial delay that can be requested by user via GUI.
+// Speed 100% results in no delay, speed 0% results in maximum delay, with
+// linear interpolation in between.
+// Must be divisible by 10.
+#define MAX_DELAY_MS 30
+
 // Enable or disable some timing debug information on serial output
 // #define ENABLE_TIMING
 

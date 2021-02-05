@@ -167,27 +167,14 @@ void loop()
         stick.nextState = StickState::IMAGE;
         BMP::open(stick.sd, stick.bmpFile, cfg.fileToLoad);
         stick.maxStep = stick.bmpFile.height;
-        // TODO: Update this after optimization with SdFat.
-        // We can do 848 pixel rows in about 11 seconds.
-        // Hence, we do about 77 rows per second and each row takes about 13ms.
-        // The 14ms are divided between showing on LEDs and loading from SD:
-        //   Show: min=8 max=11 avg=8.94
-        //   Load: min=2 max=11 avg=5.24
-        //
-        // We consider 1 row per second as "0% speed", so we know the following:
-        // - For 100% speed (i.e., speed == 10), delay = 0
-        // - For   0% speed (i.e., speed ==  0), delay = 955
-        // In between, we want to interpolate linearly.  Hence, we can use the
-        // linear equation delay = 950 - speed * 95 to approximate this.
-        stick.delayMs = 950 - cfg.speed * 95;
       } else {
         stick.nextState      = StickState::CREATIVE;
         stick.animation      = cfg.animation;
         stick.animationColor = cfg.animationColor;
         stick.maxStep        = getAnimationSteps(stick.animation);
-        stick.delayMs        = 0; // TODO
       }
 
+      stick.delayMs     = MAX_DELAY_MS - cfg.speed * (MAX_DELAY_MS / 10);
       stick.step        = 0;
       stick.state       = StickState::PAUSE;
       stick.startMs     = millis();
