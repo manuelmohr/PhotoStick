@@ -1,5 +1,4 @@
-ARDUINO ?= ~/Programs/arduino-1.8.12/arduino
-PORT ?= /dev/ttyACM0
+-include config.mk
 
 all: Photostick.ino
 	$(ARDUINO) --verify $<
